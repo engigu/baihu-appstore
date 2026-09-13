@@ -1,0 +1,23 @@
+{
+  "version": "v1",
+  "generated_at": "2026-09-13T09:14:19Z",
+  "total_apps": 1,
+  "apps": [
+    {
+      "spec_version": "v1",
+      "id": "bilibili-tool-pro",
+      "name": "B站全自动化助手 (BiliBiliToolPro)",
+      "version": "2.1.0",
+      "author": "RayWangQvQ",
+      "category": "福利签到",
+      "description": "基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理",
+      "icon": "https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png",
+      "homepage": "https://github.com/RayWangQvQ/BiliBiliToolPro",
+      "tasks_count": 13,
+      "scenarios_count": 3,
+      "app_dir": "BiliBiliToolPro",
+      "manifest_path": "apps/BiliBiliToolPro/app.yaml",
+      "updated_at": "2026-09-13T09:14:19Z"
+    }
+  ]
+}

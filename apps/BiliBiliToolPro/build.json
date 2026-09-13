@@ -1,0 +1,13 @@
+{
+  "name": "BiliBiliToolPro",
+  "version": "2.1.0",
+  "description": "根据 BiliBiliToolPro 上游仓库动态构建白虎应用规范文件 (app.yaml)",
+  "language": "python",
+  "script": "build.py",
+  "command": "python build.py",
+  "output": "app.yaml",
+  "upstream": {
+    "repo": "https://github.com/RayWangQvQ/BiliBiliToolPro.git",
+    "branch": "main"
+  }
+}

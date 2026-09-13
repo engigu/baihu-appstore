@@ -1,0 +1,66 @@
+name: Build Baihu AppStore
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'apps/**'
+      - 'build-all.py'
+      - '.github/workflows/build-apps.yml'
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+  schedule:
+    # 每天北京时间早晨 8:00 (UTC 0:00) 自动同步构建上游规则
+    - cron: '0 0 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build All Applications
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout AppStore Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Global AppStore Builder
+        run: |
+          python build-all.py
+
+      - name: Commit and Push Changes (Push & Dispatch Only)
+        if: github.event_name != 'pull_request'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/ apps.json
+          if ! git diff --staged --quiet; then
+            git commit -m "chore(auto-build): 自动构建更新应用清单与全局索引 [skip ci]"
+            git push
+          else
+            echo ">> 没有检测到应用清单变动，无需推送提交。"
+          fi
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: appstore-dist
+          path: |
+            apps.json
+            apps/**/app.yaml

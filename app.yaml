@@ -1,0 +1,184 @@
+# ==============================================================================
+# 白虎面板应用规范定义文件 (Baihu Application Specification)
+# 文件名标准: baihu-app.yaml
+# ==============================================================================
+
+spec_version: "v1"                    # 规范版本号
+id: "bilibili-assistant"              # 全局唯一标识符（由字母、数字、中划线组成）
+name: "B站全自动化助手"                # 应用中文名称
+version: "1.2.0"                      # 语义化版本号
+author: "Baihu Community"             # 作者或维护组织
+category: "福利签到"                   # 分类标签: 福利签到 / 运维巡检 / 数据同步 / 自动化工具
+description: "每日经验获取、大会员权益礼包领取、天选抽奖等一站式自动化任务编排"
+icon: "https://assets.example.com/icons/bilibili.png"
+homepage: "https://github.com/example/bilibili-assistant"
+
+# ==============================================================================
+# 1. 脚本代码源列表 (Sources) —— 支持定义多个源，100% 复用 baihu reposync 参数规范
+# ==============================================================================
+# 支持配置多个独立的代码源（例如：主业务仓库 + 外部公共工具库 + 单文件补丁直链）
+# 单源场景下亦支持使用单个 source: { ... } 对象，系统自动兼容处理
+sources:
+  - id: "main"                        # [必填] 源唯一标识符（在下方 tasks 中通过 source: "main" 关联）
+    source_type: "git"                # 对应 --source-type: git (Git仓库) 或 url (单文件下载)
+    source_url: "https://github.com/upstream-author/bili-scripts.git" # 对应 --source-url
+    branch: "main"                    # 对应 --branch: 指定分支名（留空自动探测）
+    path: ""                          # 对应 --path: 稀疏检出子目录或目标文件路径（留空全量）
+    single_file: false                # 对应 --single-file: 是否开启单文件直链下载
+    proxy: "ghproxy"                  # 对应 --proxy: none / ghproxy / mirror / custom
+    proxy_url: ""                     # 对应 --proxy-url: 自定义代理前缀（当 proxy=custom）
+    auth_token: ""                    # 对应 --auth-token: 私有仓库访问 Token
+    http_proxy: ""                    # 对应 --http-proxy: HTTP/SOCKS 代理地址
+    whitelist_paths: ""               # 对应 --whitelist-paths: 白名单保留路径（可选）
+    blacklist: ""                     # 对应 --blacklist: 黑名单剔除关键词（可选）
+    target_path: "main"               # 相对存储目录（留空默认按 id 存入 sources/{id}）
+
+  - id: "extra_helper"                # [示例] 第二个源：引入外部独立的单文件公共助手库
+    source_type: "url"
+    source_url: "https://raw.githubusercontent.com/example/tools/main/bili_helper.py"
+    single_file: true
+    proxy: "ghproxy"
+    target_path: "extra_helper"
+
+# ==============================================================================
+# 2. 原生 Shell 环境与依赖编排 (Setup) —— 拒绝死板配置，原生 Shell 极速执行
+# ==============================================================================
+setup:
+  # [可选] 依赖快速探测命令：退出码为 0 表示依赖已满足，系统自动跳过安装流程
+  check: |
+    python3 -c "import requests, cryptography" 2>/dev/null && node -e "require('axios'); require('crypto-js')" 2>/dev/null
+
+  # [必填] 依赖安装命令（原生 Shell，可自由配置国内源、编译参数与系统组件）
+  install: |
+    echo ">> [1/2] 正在安装 Python 运行时依赖..."
+    pip install -q --no-cache-dir requests cryptography -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+    echo ">> [2/2] 正在安装 Node.js 运行时依赖..."
+    npm install -g axios crypto-js --registry=https://registry.npmmirror.com
+
+    echo ">> 依赖环境准备就绪！"
+
+  # [可选] 应用卸载清理命令（卸载时由面板静默调用，防止磁盘垃圾残留）
+  uninstall: |
+    pip uninstall -y requests cryptography 2>/dev/null || true
+
+# ==============================================================================
+# 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
+# ==============================================================================
+env_schema:
+  - key: "BILI_COOKIE"
+    label: "账号凭证 (Cookie)"
+    type: "secret"                    # 类型: string / secret / number / boolean / select
+    tag: "bilibili-assistant"                   # [可选] 分组标签/分类显示
+    required: true
+    description: "登录 bilibili.com 后在控制台获取包含 SESSDATA 与 bili_jct 的 Cookie 字符串"
+    placeholder: "SESSDATA=xxxx; bili_jct=yyyy;"
+
+  - key: "COIN_NUM"
+    label: "每日投币数量"
+    type: "select"
+    tag: "bilibili-assistant"
+    required: false
+    default: "5"
+    options:
+      - label: "不投币 (0枚)"
+        value: "0"
+      - label: "保底 (1枚)"
+        value: "1"
+      - label: "拿满经验 (5枚)"
+        value: "5"
+
+  - key: "AUTO_SILVER_TO_COIN"
+    label: "自动银瓜子兑硬币"
+    type: "boolean"
+    tag: "bilibili-assistant"
+    default: true
+    description: "每日 0点 自动将多余的直播间银瓜子兑换为硬币"
+
+# ==============================================================================
+# 4. 任务生成与映射规则 (Sync Rules) —— 规则独立更新，无须上游仓库 Git Push
+# ==============================================================================
+sync_rules:
+  # 全局任务默认参数
+  defaults:
+    timeout: 15                       # 默认单次运行超时时间（分钟）
+    retry_count: 2                    # 失败重试次数
+    retry_interval: 10                # 失败重试间隔（秒）
+    work_dir: "{app_dir}"             # 脚本运行时工作目录（支持占位符）
+    language: "node"                  # 默认执行环境
+
+  # 任务清单定义（将代码源中的脚本文件重映射为规范任务）
+  tasks:
+    - id: "daily_task"
+      name: "每日基础经验任务"
+      source: "main"                  # [可选] 关联所属的代码源 id（多源场景下指定，留空默认首个源）
+      file: "bili_daily.js"           # 对应该源存储目录下的脚本文件
+      default_cron: "0 0 9 * * *"     # 默认 Cron 表达式
+      enabled: true                   # 默认是否启用
+
+    - id: "manga_task"
+      name: "大会员漫画权益领取"
+      source: "main"
+      file: "bili_manga.js"
+      default_cron: "0 30 10 * * *"
+      enabled: true
+
+    - id: "silver_coin"
+      name: "银瓜子兑换硬币"
+      source: "extra_helper"          # [示例] 关联第二个代码源 (extra_helper)
+      file: "bili_helper.py"          # 对应 extra_helper 源目录下的脚本
+      language: "python"              # 覆盖全局语言
+      default_cron: "0 5 0 * * *"
+      enabled: false
+
+    - id: "live_lottery"
+      name: "天选时刻高频巡检抽奖"
+      source: "main"
+      file: "live_lottery.js"
+      default_cron: "*/15 * * * *"
+      enabled: false
+
+# ==============================================================================
+# 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务
+# ==============================================================================
+scenarios:
+  - id: "minimal"
+    name: "佛系保级模式"
+    description: "仅执行每日登录与签到，耗时极短且完全防风控，适合只需保级的账号"
+    default: true
+    task_presets:
+      daily_task:
+        enabled: true
+      manga_task:
+        enabled: false
+      silver_coin:
+        enabled: false
+      live_lottery:
+        enabled: false
+
+  - id: "standard"
+    name: "标准日常满收益模式"
+    description: "开启投币、大会员礼包与漫画权益领取，最大化每日经验与收益"
+    task_presets:
+      daily_task:
+        enabled: true
+      manga_task:
+        enabled: true
+      silver_coin:
+        enabled: true
+      live_lottery:
+        enabled: false
+
+  - id: "hardcore"
+    name: "全天候极客模式"
+    description: "开启全部功能，包括 15 分钟一次的直播间自动巡检抽奖"
+    task_presets:
+      daily_task:
+        enabled: true
+      manga_task:
+        enabled: true
+      silver_coin:
+        enabled: true
+      live_lottery:
+        enabled: true
+        cron: "*/20 * * * *"          # 场景模板还可覆盖自定义 Cron
