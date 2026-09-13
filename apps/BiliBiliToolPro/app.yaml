@@ -228,19 +228,19 @@ sync_rules:
       default_cron: "0 12 1 * *"
       enabled: false
 
-    - id: "vip_privilege"
-      name: "大会员专属福利领取"
-      source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=VipPrivilege"
-      default_cron: "0 1 * * *"
-      enabled: false
-
     - id: "vip_big_point"
       name: "大会员大积分日常任务"
       source: "main"                  # 关联代码源 ID
       command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=VipBigPoint"
       default_cron: "7 1 * * *"
       enabled: true
+
+    - id: "vip_privilege"
+      name: "大会员专属福利领取"
+      source: "main"                  # 关联代码源 ID
+      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=VipPrivilege"
+      default_cron: "0 1 * * *"
+      enabled: false
 
 # ==============================================================================
 # 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务
@@ -273,9 +273,9 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: false
-        vip_privilege:
-          enabled: false
         vip_big_point:
+          enabled: false
+        vip_privilege:
           enabled: false
 
   - id: "standard"
@@ -305,10 +305,10 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: false
-        vip_privilege:
-          enabled: true
         vip_big_point:
           enabled: false
+        vip_privilege:
+          enabled: true
 
   - id: "hardcore"
     name: "全天候极客全能模式"
@@ -337,7 +337,7 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: true
-        vip_privilege:
-          enabled: true
         vip_big_point:
+          enabled: true
+        vip_privilege:
           enabled: true

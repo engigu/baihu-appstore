@@ -1,6 +1,6 @@
 {
   "version": "v1",
-  "generated_at": "2026-09-13T09:14:19Z",
+  "generated_at": "2026-09-13T09:17:12Z",
   "total_apps": 1,
   "apps": [
     {
@@ -17,7 +17,7 @@
       "scenarios_count": 3,
       "app_dir": "BiliBiliToolPro",
       "manifest_path": "apps/BiliBiliToolPro/app.yaml",
-      "updated_at": "2026-09-13T09:14:19Z"
+      "updated_at": "2026-09-13T09:17:12Z"
     }
   ]
 }
