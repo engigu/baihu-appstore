@@ -38,34 +38,18 @@ sources:
 # 2. 原生 Shell 环境与依赖编排 (Setup) —— 拒绝死板配置，原生 Shell 极速执行
 # ==============================================================================
 setup:
-  # [可选] 依赖快速探测：检测 dotnet 及版本是否 >= 8，满足直接秒级跳过安装
-  check: |
-    command -v dotnet >/dev/null 2>&1 && [ "$(dotnet --version 2>/dev/null | cut -d. -f1)" -ge 8 ]
+  # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
+  check: "dotnet --version 2>/dev/null | grep -q '^8' || mise which dotnet@8 >/dev/null 2>&1"
 
-  # [必填] 依赖安装命令：优先利用白虎面板内置的 mise 安装配置 dotnet@8，并补全系统依赖
+  # [必填] 依赖安装命令：安装 dotnet@8 并一次性预编译到 bin 目录，彻底避免每次任务重复 build
   install: |
-    echo ">> [1/2] 正在检查系统运行库依赖..."
-    if command -v apt-get >/dev/null 2>&1; then
-      apt-get update -qq && apt-get install -y -qq bash libicu-dev libkrb5-dev libssl-dev zlib1g-dev || true
-    elif command -v apk >/dev/null 2>&1; then
-      apk update && apk add -q bash icu-libs krb5-libs zlib libssl3 || true
-    fi
-
-    echo ">> [2/2] 正在配置 .NET 8 运行环境..."
-    if command -v mise >/dev/null 2>&1; then
-      mise install dotnet@8
-      mise use -g dotnet@8
-    else
-      echo ">> 未检测到 mise，使用官方脚本安装 .NET 8..."
-      curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
-    fi
-    echo ">> .NET 8 运行环境已准备就绪！"
+    mise install dotnet@8
+    echo ">> 正在预编译 BiliBiliToolPro (Release)..."
+    dotnet publish -c Release -o "{app_dir}/bin" "{app_dir}/sources/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
+    echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
   # [可选] 应用卸载清理
-  uninstall: |
-    echo ">> 正在清理构建缓存与临时文件..."
-    rm -rf "{app_dir}/sources/main/src/Ray.BiliBiliTool.Console/bin" 2>/dev/null || true
-    rm -rf "{app_dir}/sources/main/src/Ray.BiliBiliTool.Console/obj" 2>/dev/null || true
+  uninstall: "rm -rf '{app_dir}/bin' '{app_dir}/sources/main/src/Ray.BiliBiliTool.Console/obj' 2>/dev/null || true"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
@@ -146,101 +130,114 @@ sync_rules:
     timeout: 30                       # 默认超时（分钟）
     retry_count: 1                    # 失败重试次数
     retry_interval: 15                # 失败重试间隔（秒）
-    work_dir: "{app_dir}/sources/main/src/Ray.BiliBiliTool.Console" # 默认在 Console 工程目录运行
-    language: "dotnet"                # 默认执行环境
+    work_dir: "{app_dir}/bin"         # 运行已编译的产物目录，实现 0.1 秒极速启动
+    language: "dotnet@8"              # 执行环境全部锁定为 dotnet@8
 
   # 任务清单定义（解耦上游注释，标准化任务编排）
   tasks:
     - id: "charge"
       name: "大会员每月B币券充电"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=Charge"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=Charge"
       default_cron: "0 12 * * *"
       enabled: false
 
     - id: "daily"
       name: "每日基础经验与投币任务"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=Daily"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=Daily"
       default_cron: "0 9 * * *"
       enabled: true
 
     - id: "live_fans_medal"
       name: "直播粉丝牌亲密度打卡"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=LiveFansMedal"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=LiveFansMedal"
       default_cron: "5 0 * * *"
       enabled: false
 
     - id: "live_lottery"
       name: "天选时刻高频巡检抽奖"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=LiveLottery"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=LiveLottery"
       default_cron: "0 13 * * *"
       enabled: false
 
     - id: "login"
       name: "扫码登录 (自动持久化Cookie)"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=Login"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=Login"
       default_cron: "0 0 1 1 *"
       enabled: false
 
     - id: "manga"
       name: "漫画任务"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=Manga"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=Manga"
       default_cron: "0 14 * * *"
       enabled: true
 
     - id: "manga_privilege"
       name: "大会员漫画权益领取"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=MangaPrivilege"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=MangaPrivilege"
       default_cron: "0 15 * * *"
       enabled: true
 
     - id: "silver2_coin"
       name: "直播间银瓜子兑换硬币"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=Silver2Coin"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=Silver2Coin"
       default_cron: "0 8 * * *"
       enabled: true
 
     - id: "test"
       name: "Cookie 有效性测试"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=Test"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=Test"
       default_cron: "0 8 * * *"
       enabled: false
 
     - id: "try_fix"
       name: "尝试修复异常"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=TryFix"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=TryFix"
       default_cron: "0 0 1 1 *"
       enabled: false
 
     - id: "unfollow_batched"
       name: "批量取关失效主播"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=UnfollowBatched"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=UnfollowBatched"
       default_cron: "0 12 1 * *"
+      enabled: false
+
+    - id: "vip_privilege"
+      name: "大会员专属福利领取"
+      source: "main"                  # 关联代码源 ID
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=VipPrivilege"
+      default_cron: "0 1 * * *"
       enabled: false
 
     - id: "vip_big_point"
       name: "大会员大积分日常任务"
       source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=VipBigPoint"
+      language: "dotnet@8"            # 运行时锁定 dotnet@8
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks=VipBigPoint"
       default_cron: "7 1 * * *"
       enabled: true
-
-    - id: "vip_privilege"
-      name: "大会员专属福利领取"
-      source: "main"                  # 关联代码源 ID
-      command: "dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks=VipPrivilege"
-      default_cron: "0 1 * * *"
-      enabled: false
 
 # ==============================================================================
 # 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务
@@ -273,9 +270,9 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: false
-        vip_big_point:
-          enabled: false
         vip_privilege:
+          enabled: false
+        vip_big_point:
           enabled: false
 
   - id: "standard"
@@ -305,10 +302,10 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: false
-        vip_big_point:
-          enabled: false
         vip_privilege:
           enabled: true
+        vip_big_point:
+          enabled: false
 
   - id: "hardcore"
     name: "全天候极客全能模式"
@@ -337,7 +334,7 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: true
-        vip_big_point:
-          enabled: true
         vip_privilege:
+          enabled: true
+        vip_big_point:
           enabled: true

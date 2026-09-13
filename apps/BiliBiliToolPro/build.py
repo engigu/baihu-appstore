@@ -141,7 +141,7 @@ def parse_tasks_from_repo(repo_dir: Path):
                 "target_code": target_code,
                 "cron": cron,
                 "enabled": enabled,
-                "command": f"dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks={target_code}",
+                "command": f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks={target_code}",
             })
 
     # 如果未能从目录中扫描到，使用标准缺省任务集兜底
@@ -162,7 +162,7 @@ def parse_tasks_from_repo(repo_dir: Path):
                 "target_code": t_code,
                 "cron": t_cron,
                 "enabled": t_en,
-                "command": f"dotnet run -v m -- --ENVIRONMENT=Production --Ray_RunTasks={t_code}",
+                "command": f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks={t_code}",
             })
 
     return tasks
@@ -175,6 +175,7 @@ def generate_app_yaml(tasks: list) -> str:
         tasks_yaml_lines.append(f'    - id: "{t["id"]}"')
         tasks_yaml_lines.append(f'      name: "{t["name"]}"')
         tasks_yaml_lines.append('      source: "main"                  # 关联代码源 ID')
+        tasks_yaml_lines.append('      language: "dotnet@8"            # 运行时锁定 dotnet@8')
         tasks_yaml_lines.append(f'      command: "{t["command"]}"')
         tasks_yaml_lines.append(f'      default_cron: "{t["cron"]}"')
         tasks_yaml_lines.append(f'      enabled: {"true" if t["enabled"] else "false"}')
@@ -247,34 +248,18 @@ sources:
 # 2. 原生 Shell 环境与依赖编排 (Setup) —— 拒绝死板配置，原生 Shell 极速执行
 # ==============================================================================
 setup:
-  # [可选] 依赖快速探测：检测 dotnet 及版本是否 >= 8，满足直接秒级跳过安装
-  check: |
-    command -v dotnet >/dev/null 2>&1 && [ "$(dotnet --version 2>/dev/null | cut -d. -f1)" -ge 8 ]
+  # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
+  check: "dotnet --version 2>/dev/null | grep -q '^8' || mise which dotnet@8 >/dev/null 2>&1"
 
-  # [必填] 依赖安装命令：优先利用白虎面板内置的 mise 安装配置 dotnet@8，并补全系统依赖
+  # [必填] 依赖安装命令：安装 dotnet@8 并一次性预编译到 bin 目录，彻底避免每次任务重复 build
   install: |
-    echo ">> [1/2] 正在检查系统运行库依赖..."
-    if command -v apt-get >/dev/null 2>&1; then
-      apt-get update -qq && apt-get install -y -qq bash libicu-dev libkrb5-dev libssl-dev zlib1g-dev || true
-    elif command -v apk >/dev/null 2>&1; then
-      apk update && apk add -q bash icu-libs krb5-libs zlib libssl3 || true
-    fi
-
-    echo ">> [2/2] 正在配置 .NET 8 运行环境..."
-    if command -v mise >/dev/null 2>&1; then
-      mise install dotnet@8
-      mise use -g dotnet@8
-    else
-      echo ">> 未检测到 mise，使用官方脚本安装 .NET 8..."
-      curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 8.0
-    fi
-    echo ">> .NET 8 运行环境已准备就绪！"
+    mise install dotnet@8
+    echo ">> 正在预编译 BiliBiliToolPro (Release)..."
+    dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
+    echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
   # [可选] 应用卸载清理
-  uninstall: |
-    echo ">> 正在清理构建缓存与临时文件..."
-    rm -rf "{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console/bin" 2>/dev/null || true
-    rm -rf "{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console/obj" 2>/dev/null || true
+  uninstall: "rm -rf '{{app_dir}}/bin' '{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console/obj' 2>/dev/null || true"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
@@ -355,8 +340,8 @@ sync_rules:
     timeout: 30                       # 默认超时（分钟）
     retry_count: 1                    # 失败重试次数
     retry_interval: 15                # 失败重试间隔（秒）
-    work_dir: "{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console" # 默认在 Console 工程目录运行
-    language: "dotnet"                # 默认执行环境
+    work_dir: "{{app_dir}}/bin"         # 运行已编译的产物目录，实现 0.1 秒极速启动
+    language: "dotnet@8"              # 执行环境全部锁定为 dotnet@8
 
   # 任务清单定义（解耦上游注释，标准化任务编排）
   tasks:
@@ -405,8 +390,11 @@ def main():
     if args.source_dir and Path(args.source_dir).exists():
         repo_dir = Path(args.source_dir).resolve()
         print(f"[源目录] 使用指定的本地目录: {repo_dir}")
+    elif not os.environ.get("GITHUB_ACTIONS") and Path("F:/workspace/BiliBiliToolPro").exists():
+        repo_dir = Path("F:/workspace/BiliBiliToolPro").resolve()
+        print(f"[源目录] 本地开发环境自动命中源码缓存: {repo_dir}")
     else:
-        # 自动通过 git 从上游克隆
+        # 云端 CI/CD 或无本地缓存时，自动通过 git 从上游克隆
         proxy = args.proxy or os.environ.get("GH_PROXY", "")
         tmp_dir_handle = clone_upstream_repo(proxy)
         if tmp_dir_handle:
