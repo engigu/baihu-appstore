@@ -279,6 +279,11 @@ setup:
     mise exec {mise_languages} -- dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
     echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
+  # [可选] 后置初始化命令：编译成功后自动执行的后置 Shell 脚本
+  post_install: |
+    mkdir -p "{{app_dir}}/bin/logs" 2>/dev/null || true
+    echo ">> 后置初始化准备就绪！"
+
   # [可选] 应用卸载清理
   uninstall: "rm -rf '{{app_dir}}/bin' '{{app_dir}}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj' 2>/dev/null || true"
 
