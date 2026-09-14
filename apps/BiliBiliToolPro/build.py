@@ -84,6 +84,7 @@ def parse_tasks_from_repo(repo_dir: Path):
         "LiveFansMedal": "直播粉丝牌亲密度打卡",
         "UnfollowBatched": "批量取关失效主播",
         "Test": "Cookie 有效性测试",
+        "TryFix": "清理缓存并重新预编译 (尝试修复异常)",
     }
 
     # 核心日常默认启用的任务
@@ -119,6 +120,9 @@ def parse_tasks_from_repo(repo_dir: Path):
             # 提取 cron
             m_cron = re.search(r'#\s*cron:\s*([^\r\n]+)', content)
             cron = m_cron.group(1).strip() if m_cron else "0 0 9 * * *"
+            parts = cron.split()
+            if len(parts) == 5:
+                cron = "0 " + cron
 
             # 提取 Env 名称
             m_env = re.search(r'#\s*new Env\(["\']([^"\']+)["\']\)', content)
@@ -135,13 +139,18 @@ def parse_tasks_from_repo(repo_dir: Path):
             task_id = re.sub(r'(?<!^)(?=[A-Z])', '_', target_code).lower()
             enabled = target_code in default_enabled_codes
 
+            if target_code == "TryFix":
+                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj && echo '>> 缓存清理与重新编译就绪！'"
+            else:
+                cmd = f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks={target_code}"
+
             tasks.append({
                 "id": task_id,
                 "name": display_name,
                 "target_code": target_code,
                 "cron": cron,
                 "enabled": enabled,
-                "command": f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks={target_code}",
+                "command": cmd,
             })
 
     # 如果未能从目录中扫描到，使用标准缺省任务集兜底
@@ -156,13 +165,18 @@ def parse_tasks_from_repo(repo_dir: Path):
             ("charge", "大会员每月B币券充电", "Charge", "0 0 12 28 * *", False),
         ]
         for t_id, t_name, t_code, t_cron, t_en in fallback_targets:
+            if t_code == "TryFix":
+                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj && echo '>> 缓存清理与重新编译就绪！'"
+            else:
+                cmd = f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks={t_code}"
+
             tasks.append({
                 "id": t_id,
                 "name": t_name,
                 "target_code": t_code,
                 "cron": t_cron,
                 "enabled": t_en,
-                "command": f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --Ray_RunTasks={t_code}",
+                "command": cmd,
             })
 
     return tasks
@@ -170,12 +184,15 @@ def parse_tasks_from_repo(repo_dir: Path):
 
 def generate_app_yaml(tasks: list) -> str:
     """组装符合白虎规范 v1 的完整 YAML 清单"""
+    tag = "{tag}"
+    mise_languages = "{mise_languages}"
     tasks_yaml_lines = []
     for t in tasks:
         tasks_yaml_lines.append(f'    - id: "{t["id"]}"')
         tasks_yaml_lines.append(f'      name: "{t["name"]}"')
         tasks_yaml_lines.append('      source: "main"                  # 关联代码源 ID')
-        tasks_yaml_lines.append('      language: "dotnet@8"            # 运行时锁定 dotnet@8')
+        tasks_yaml_lines.append('      tag: "{tag}"')
+        tasks_yaml_lines.append('      language: "{mise_languages}"            # 运行时锁定 {mise_languages}')
         tasks_yaml_lines.append(f'      command: "{t["command"]}"')
         tasks_yaml_lines.append(f'      default_cron: "{t["cron"]}"')
         tasks_yaml_lines.append(f'      enabled: {"true" if t["enabled"] else "false"}')
@@ -198,7 +215,7 @@ def generate_app_yaml(tasks: list) -> str:
 
         # 全能极客
         if t_id == "live_lottery":
-            hardcore_presets.append(f'        {t_id}:\n          enabled: true\n          cron: "*/20 * * * *"')
+            hardcore_presets.append(f'        {t_id}:\n          enabled: true\n          cron: "0 */20 * * * *"')
         elif t_id in ("login", "test", "try_fix"):
             hardcore_presets.append(f'        {t_id}:\n          enabled: false')
         else:
@@ -221,6 +238,9 @@ name: "B站全自动化助手 (BiliBiliToolPro)"
 version: "2.1.0"
 author: "RayWangQvQ"
 category: "福利签到"
+template:
+  - tag: "BiliBiliToolPro"
+  - mise_languages: "dotnet@8.0.425"
 description: "基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理"
 icon: "https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png"
 homepage: "https://github.com/RayWangQvQ/BiliBiliToolPro"
@@ -249,17 +269,18 @@ sources:
 # ==============================================================================
 setup:
   # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
-  check: "dotnet --version 2>/dev/null | grep -q '^8' || mise which dotnet@8 >/dev/null 2>&1"
+  check: "mise exec {mise_languages} -- dotnet --version 2>/dev/null || dotnet --version 2>/dev/null | grep -q '^8.0.425'"
 
-  # [必填] 依赖安装命令：安装 dotnet@8 并一次性预编译到 bin 目录，彻底避免每次任务重复 build
+  # [必填] 依赖安装命令：安装 {mise_languages} 并一次性预编译到 bin 目录，彻底避免每次任务重复 build
   install: |
-    mise install dotnet@8
-    echo ">> 正在预编译 BiliBiliToolPro (Release)..."
-    dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
+    mise install {mise_languages}
+    mise use -g {mise_languages}
+    echo ">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)..."
+    mise exec {mise_languages} -- dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
     echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
   # [可选] 应用卸载清理
-  uninstall: "rm -rf '{{app_dir}}/bin' '{{app_dir}}/sources/main/src/Ray.BiliBiliTool.Console/obj' 2>/dev/null || true"
+  uninstall: "rm -rf '{{app_dir}}/bin' '{{app_dir}}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj' 2>/dev/null || true"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
@@ -268,7 +289,7 @@ env_schema:
   - key: "Ray_BiliBiliCookies__0"
     label: "主账号凭证 (Cookie)"
     type: "secret"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     required: true
     description: "登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）"
     placeholder: "SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;"
@@ -276,14 +297,14 @@ env_schema:
   - key: "Ray_BiliBiliCookies__1"
     label: "账号 2 凭证 (多账号可选)"
     type: "secret"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     required: false
     description: "多账号模式：第二个账号的 Cookie 字符串"
 
   - key: "Ray_DailyTaskConfig__NumberOfCoins"
     label: "每日投币数量"
     type: "select"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     required: false
     default: "5"
     options:
@@ -297,21 +318,21 @@ env_schema:
   - key: "Ray_DailyTaskConfig__SelectLike"
     label: "投币同时点赞"
     type: "boolean"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     default: true
     description: "投币成功后是否同时点赞视频"
 
   - key: "Ray_LiveLotteryTaskConfig__AutoSendDanmu"
     label: "天选抽奖自动发弹幕"
     type: "boolean"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     default: true
     description: "遇到弹幕抽奖时是否自动发送所需弹幕"
 
   - key: "BaihuConfig__Token"
     label: "白虎面板 API Token"
     type: "secret"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     required: false
     description: "白虎面板 OpenAPI 访问令牌。配置后运行【扫码登录】任务即可自动持久化 Cookie 回白虎面板！"
     placeholder: "在白虎面板【系统设置】->【OpenAPI】中创建"
@@ -319,17 +340,25 @@ env_schema:
   - key: "BA_URL"
     label: "白虎面板访问地址"
     type: "string"
-    tag: "BiliBiliToolPro"
+    tag: "{tag}"
     required: false
     default: "http://localhost:8052"
     description: "白虎面板的内部或局域网访问地址，用于接收扫码登录成功的 Cookie 回调"
 
+  - key: "Ray_PlatformType"
+    label: "运行平台类型"
+    type: "string"
+    tag: "{tag}"
+    required: false
+    default: "Baihu"
+    description: "指定底层运行平台为 Baihu，完全复刻青龙/白虎原生调度行为，实现扫码登录后自动将 Cookie 同步保存回面板"
+
   - key: "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
     label: "精简容器兼容模式 (无ICU)"
     type: "boolean"
-    tag: "BiliBiliToolPro"
-    default: false
-    description: "若精简版容器中报 Couldn't find a valid ICU package 错误，请开启此项"
+    tag: "{tag}"
+    default: true
+    description: "复刻 bili_task_base.sh 中的全局环境变量，解决跨平台与精简容器中 ICU 异常"
 
 # ==============================================================================
 # 4. 任务生成与映射规则 (Sync Rules) —— 规则独立热更新，无须上游仓库 Git Push
@@ -341,7 +370,7 @@ sync_rules:
     retry_count: 1                    # 失败重试次数
     retry_interval: 15                # 失败重试间隔（秒）
     work_dir: "{{app_dir}}/bin"         # 运行已编译的产物目录，实现 0.1 秒极速启动
-    language: "dotnet@8"              # 执行环境全部锁定为 dotnet@8
+    language: "{mise_languages}"              # 执行环境全部锁定为 {mise_languages}
 
   # 任务清单定义（解耦上游注释，标准化任务编排）
   tasks:

@@ -1,0 +1,9 @@
+# Python 编译缓存与字节码
+__pycache__/
+*.py[cod]
+*.class
+
+# 临时与系统文件
+*.log
+.DS_Store
+Thumbs.db
