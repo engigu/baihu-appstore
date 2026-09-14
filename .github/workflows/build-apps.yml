@@ -58,7 +58,8 @@ jobs:
           git add apps/ apps.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(auto-build): 自动构建更新应用清单与全局索引 [skip ci]"
-            git push
+            git pull --rebase origin main
+            git push origin main
           else
             echo ">> 没有检测到应用清单变动，无需推送提交。"
           fi
