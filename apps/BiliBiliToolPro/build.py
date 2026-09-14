@@ -281,7 +281,7 @@ setup:
 
   # [可选] 后置初始化命令：编译成功后自动执行的后置 Shell 脚本
   post_install: |
-    mkdir -p "{{app_dir}}/bin/logs" 2>/dev/null || true
+    mise exec -- python -c "import os; os.makedirs(r'{{app_dir}}/bin/logs', exist_ok=True)"
     echo ">> 后置初始化准备就绪！"
 
   # [可选] 应用卸载清理
