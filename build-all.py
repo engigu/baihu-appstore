@@ -27,24 +27,19 @@ from pathlib import Path
 try:
     import yaml
 except ImportError:
-    yaml = None
+    print("[错误] 未检测到 pyyaml 依赖，请运行: pip install pyyaml", file=sys.stderr)
+    sys.exit(1)
 
 
 def parse_yaml_metadata(yaml_path: Path) -> dict:
-    """提取 app.yaml 中的元数据、任务、场景与环境变量契约 (读取原始 YAML 内容)"""
+    """提取 app.yaml 中的元数据、任务、场景与环境变量契约 (纯粹使用 PyYAML 标准解析)"""
     meta = {}
     try:
         content = yaml_path.read_text(encoding="utf-8", errors="ignore")
+        doc = yaml.safe_load(content) or {}
     except Exception as e:
-        print(f"[警告] 读取 {yaml_path} 失败: {e}", file=sys.stderr)
+        print(f"[警告] 读取或解析 {yaml_path} 失败: {e}", file=sys.stderr)
         return meta
-
-    doc = None
-    if yaml is not None:
-        try:
-            doc = yaml.safe_load(content)
-        except Exception:
-            doc = None
 
     if isinstance(doc, dict):
         # 基础元数据收集
@@ -52,7 +47,7 @@ def parse_yaml_metadata(yaml_path: Path) -> dict:
             if key in doc and doc[key] is not None:
                 meta[key] = doc[key]
 
-        # 纯收集合并，不进行多余的数据转换
+        # 纯收集合并，不进行多余的数据转换与正则篡改
         tasks = doc.get("tasks") or (doc.get("sync_rules") or {}).get("tasks") or []
         meta["tasks"] = tasks
         meta["tasks_count"] = len(tasks)
@@ -60,93 +55,6 @@ def parse_yaml_metadata(yaml_path: Path) -> dict:
         scenarios = doc.get("scenarios") or []
         meta["scenarios"] = scenarios
         meta["scenarios_count"] = len(scenarios)
-
-        return meta
-
-    # 3. 兜底正则提取逻辑 (已在替换后的 content 上执行)
-    for key in ["spec_version", "id", "name", "version", "author", "category", "description", "icon", "homepage"]:
-        pattern = r'^' + key + r':\s*["\']?([^"\'\r\n]+)["\']?'
-        m = re.search(pattern, content, re.MULTILINE)
-        if m:
-            meta[key] = m.group(1).strip()
-
-    # 提取任务清单
-    tasks_list = []
-    tasks_match = re.search(r'tasks:\s*\n(.*?)(?=\n[a-z_]+:|\Z)', content, re.DOTALL)
-    if tasks_match:
-        raw_tasks = re.split(r'\n\s*-\s*id:\s*', "\n" + tasks_match.group(1))
-        for rt in raw_tasks:
-            if not rt.strip():
-                continue
-            lines = rt.strip().splitlines()
-            t_id = lines[0].strip().strip('"\'')
-            t_name = re.search(r'name:\s*["\']?([^"\'\r\n]+)["\']?', rt)
-            t_cron = re.search(r'default_cron:\s*["\']?([^"\'\r\n]+)["\']?', rt)
-            t_cmd = re.search(r'command:\s*["\']?([^"\'\r\n]+)["\']?', rt)
-            t_tag = re.search(r'tag:\s*["\']?([^"\'\r\n]+)["\']?', rt)
-            t_lang = re.search(r'language:\s*["\']?([^"\'\r\n]+)["\']?', rt)
-            t_enabled = re.search(r'enabled:\s*(true|false)', rt)
-            tasks_list.append({
-                "id": t_id,
-                "name": t_name.group(1).strip() if t_name else t_id,
-                "cron": t_cron.group(1).strip() if t_cron else "",
-                "command": t_cmd.group(1).strip() if t_cmd else "",
-                "tag": t_tag.group(1).strip() if t_tag else "",
-                "language": t_lang.group(1).strip() if t_lang else "",
-                "enabled": (t_enabled.group(1).lower() == "true") if t_enabled else True
-            })
-
-    meta["tasks"] = tasks_list
-    meta["tasks_count"] = len(tasks_list)
-
-    # 提取环境变量契约
-    env_list = []
-    env_match = re.search(r'env_schema:\s*\n(.*?)(?=\n[a-z_]+:|\Z)', content, re.DOTALL)
-    if env_match:
-        raw_envs = re.split(r'\n\s*-\s*key:\s*', "\n" + env_match.group(1))
-        for re_item in raw_envs:
-            if not re_item.strip():
-                continue
-            lines = re_item.strip().splitlines()
-            e_key = lines[0].strip().strip('"\'')
-            e_label = re.search(r'label:\s*["\']?([^"\'\r\n]+)["\']?', re_item)
-            e_type = re.search(r'type:\s*["\']?([^"\'\r\n]+)["\']?', re_item)
-            e_tag = re.search(r'tag:\s*["\']?([^"\'\r\n]+)["\']?', re_item)
-            e_req = re.search(r'required:\s*(true|false)', re_item)
-            e_desc = re.search(r'description:\s*["\']?([^"\'\r\n]+)["\']?', re_item)
-            e_def = re.search(r'default:\s*["\']?([^"\'\r\n]+)["\']?', re_item)
-            env_list.append({
-                "key": e_key,
-                "label": e_label.group(1).strip() if e_label else e_key,
-                "type": e_type.group(1).strip() if e_type else "string",
-                "tag": e_tag.group(1).strip() if e_tag else "",
-                "required": (e_req.group(1).lower() == "true") if e_req else False,
-                "description": e_desc.group(1).strip() if e_desc else "",
-                "default": e_def.group(1).strip() if e_def else ""
-            })
-    meta["env_schema"] = env_list
-
-    # 提取场景预设
-    scenarios_list = []
-    sc_match = re.search(r'scenarios:\s*\n(.*)', content, re.DOTALL)
-    if sc_match:
-        raw_sc = re.split(r'\n\s*-\s*id:\s*', "\n" + sc_match.group(1))
-        for rsc in raw_sc:
-            if not rsc.strip():
-                continue
-            lines = rsc.strip().splitlines()
-            s_id = lines[0].strip().strip('"\'')
-            s_name = re.search(r'name:\s*["\']?([^"\'\r\n]+)["\']?', rsc)
-            s_desc = re.search(r'description:\s*["\']?([^"\'\r\n]+)["\']?', rsc)
-            s_def = re.search(r'default:\s*(true|false)', rsc)
-            scenarios_list.append({
-                "id": s_id,
-                "name": s_name.group(1).strip() if s_name else s_id,
-                "description": s_desc.group(1).strip() if s_desc else "",
-                "default": (s_def.group(1).lower() == "true") if s_def else False
-            })
-    meta["scenarios"] = scenarios_list
-    meta["scenarios_count"] = len(scenarios_list)
 
     return meta
 
