@@ -24,9 +24,14 @@ import argparse
 import subprocess
 from pathlib import Path
 
+try:
+    import yaml
+except ImportError:
+    yaml = None
+
 
 def parse_yaml_metadata(yaml_path: Path) -> dict:
-    """提取 app.yaml 中的元数据、任务、场景与环境变量契约"""
+    """提取 app.yaml 中的元数据、任务、场景与环境变量契约 (读取原始 YAML 内容)"""
     meta = {}
     try:
         content = yaml_path.read_text(encoding="utf-8", errors="ignore")
@@ -34,7 +39,31 @@ def parse_yaml_metadata(yaml_path: Path) -> dict:
         print(f"[警告] 读取 {yaml_path} 失败: {e}", file=sys.stderr)
         return meta
 
-    # 基本信息
+    doc = None
+    if yaml is not None:
+        try:
+            doc = yaml.safe_load(content)
+        except Exception:
+            doc = None
+
+    if isinstance(doc, dict):
+        # 基础元数据收集
+        for key in ["spec_version", "id", "name", "version", "author", "category", "description", "icon", "homepage"]:
+            if key in doc and doc[key] is not None:
+                meta[key] = doc[key]
+
+        # 纯收集合并，不进行多余的数据转换
+        tasks = doc.get("tasks") or (doc.get("sync_rules") or {}).get("tasks") or []
+        meta["tasks"] = tasks
+        meta["tasks_count"] = len(tasks)
+        meta["env_schema"] = doc.get("env_schema") or []
+        scenarios = doc.get("scenarios") or []
+        meta["scenarios"] = scenarios
+        meta["scenarios_count"] = len(scenarios)
+
+        return meta
+
+    # 3. 兜底正则提取逻辑 (已在替换后的 content 上执行)
     for key in ["spec_version", "id", "name", "version", "author", "category", "description", "icon", "homepage"]:
         pattern = r'^' + key + r':\s*["\']?([^"\'\r\n]+)["\']?'
         m = re.search(pattern, content, re.MULTILINE)
@@ -54,12 +83,16 @@ def parse_yaml_metadata(yaml_path: Path) -> dict:
             t_name = re.search(r'name:\s*["\']?([^"\'\r\n]+)["\']?', rt)
             t_cron = re.search(r'default_cron:\s*["\']?([^"\'\r\n]+)["\']?', rt)
             t_cmd = re.search(r'command:\s*["\']?([^"\'\r\n]+)["\']?', rt)
+            t_tag = re.search(r'tag:\s*["\']?([^"\'\r\n]+)["\']?', rt)
+            t_lang = re.search(r'language:\s*["\']?([^"\'\r\n]+)["\']?', rt)
             t_enabled = re.search(r'enabled:\s*(true|false)', rt)
             tasks_list.append({
                 "id": t_id,
                 "name": t_name.group(1).strip() if t_name else t_id,
                 "cron": t_cron.group(1).strip() if t_cron else "",
                 "command": t_cmd.group(1).strip() if t_cmd else "",
+                "tag": t_tag.group(1).strip() if t_tag else "",
+                "language": t_lang.group(1).strip() if t_lang else "",
                 "enabled": (t_enabled.group(1).lower() == "true") if t_enabled else True
             })
 
@@ -226,11 +259,12 @@ def main():
             meta = parse_yaml_metadata(target_yaml)
             meta["app_dir"] = app_dir.name
             meta["manifest_path"] = f"apps/{app_dir.name}/{target_yaml.name}"
-            # 附带完整的 manifest_raw 清单内容与官方远程直链，供客户端零请求秒级部署
+            # 附带原汁原味的完整 manifest_raw 清单文本与官方远程直链
             try:
-                meta["manifest_raw"] = target_yaml.read_text(encoding="utf-8", errors="ignore")
+                raw_text = target_yaml.read_text(encoding="utf-8", errors="ignore")
             except Exception:
-                meta["manifest_raw"] = ""
+                raw_text = ""
+            meta["manifest_raw"] = raw_text
             meta["manifest_url"] = f"https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/{app_dir.name}/{target_yaml.name}"
             meta["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
             apps_index.append(meta)
