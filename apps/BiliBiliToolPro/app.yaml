@@ -43,12 +43,11 @@ sources:
 # ==============================================================================
 setup:
   # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
-  check: "mise exec {mise_languages} -- dotnet --version 2>/dev/null || dotnet --version 2>/dev/null | grep -q '^8.0.425'"
+  check: "mise exec {mise_languages} -- dotnet --version"
 
   # [必填] 依赖安装命令：安装 {mise_languages} 并一次性预编译到 bin 目录，彻底避免每次任务重复 build
   install: |
     mise install {mise_languages}
-    mise use -g {mise_languages}
     echo ">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)..."
     mise exec {mise_languages} -- dotnet publish -c Release -o "{app_dir}/bin" "{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
     echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
@@ -58,7 +57,7 @@ setup:
     echo ">> 后置初始化准备就绪！"
 
   # [可选] 应用卸载清理
-  uninstall: "rm -rf '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj' 2>/dev/null || true"
+  uninstall: "mise exec {mise_languages} -- node -e "['bin','main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{app_dir}/'+p, {recursive: true, force: true}))""
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单

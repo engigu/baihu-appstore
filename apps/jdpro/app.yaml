@@ -21,18 +21,14 @@ sources:
   proxy: ghproxy
   target_path: main
 setup:
-  check: mise exec {mise_languages} -- node -v 2>/dev/null | grep -q 'v20'
-  install: 'mise install {mise_languages}
-
+  check: mise exec {mise_languages} -- node -e "if (!process.version.startsWith('v20'))
+    process.exit(1)"
+  install: |-
+    mise install {mise_languages}
     echo ">> 正在为 JDPro 安装 Node.js 依赖..."
-
-    cd "{app_dir}/main" && mise exec {mise_languages} -- npm install --no-audit --no-fund
-    --production || true
-
+    cd "{app_dir}/main" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production
     echo ">> JDPro 依赖就绪！"
-
-    '
-  uninstall: rm -rf '{app_dir}/main/node_modules' 2>/dev/null || true
+  uninstall: mise exec {mise_languages} -- node -e "try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}"
 env_schema:
 - key: JD_COOKIE
   label: 京东账号凭证 (Cookie)
