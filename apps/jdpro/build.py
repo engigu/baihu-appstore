@@ -133,7 +133,7 @@ def parse_tasks_from_repo(repo_dir: Path):
 
         task_id = s_file.stem
         is_python = filename.endswith(".py")
-        exec_cmd = f"mise exec {{mise_languages}} -- python main/6dylan6_jdpro/{filename}" if is_python else f"mise exec {{mise_languages}} -- node main/6dylan6_jdpro/{filename}"
+        exec_cmd = f"mise exec {{mise_languages}} -- python main/{filename}" if is_python else f"mise exec {{mise_languages}} -- node main/{filename}"
 
         tasks.append({
             "id": task_id,
@@ -232,10 +232,10 @@ def main():
             "install": (
                 "mise install {mise_languages}\n"
                 "echo \">> 正在为 JDPro 安装 Node.js 依赖...\"\n"
-                "cd \"{app_dir}/main/6dylan6_jdpro\" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production\n"
+                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production\n"
                 "echo \">> JDPro 依赖就绪！\""
             ),
-            "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/6dylan6_jdpro/node_modules',{recursive:true,force:true})}catch(e){}\""
+            "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}\""
         },
 
         "env_schema": [
