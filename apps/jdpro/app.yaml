@@ -25,6 +25,8 @@ setup:
     process.exit(1)"
   install: |-
     mise install {mise_languages}
+    echo ">> 正在为 JDPro 安装核心 Node.js 依赖 (dotenv, got, crypto-js...)..."
+    cd "{app_dir}/main" && mise exec {mise_languages} -- npm install dotenv got crypto-js tslib qrcode-terminal typescript canvas --no-audit --no-fund --production
     echo ">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)..."
     cd "{app_dir}/main" && mise exec {mise_languages} -- node jd_indeps.js
     echo ">> JDPro 依赖就绪！"
