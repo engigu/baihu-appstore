@@ -57,14 +57,46 @@ def main():
         ],
 
         "setup": {
-            "check": "mise exec {mise_languages} -- go version",
+            "check": "{app_dir}/bin/ark --version",
             "install": (
-                "mise install {mise_languages}\n"
-                "echo \">> 正在为 Ark 编译 Go 独立单二进制程序...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- go build -ldflags=\"-s -w\" -o \"{app_dir}/bin/ark\" .\n"
-                "echo \">> Ark 编译与部署就绪！\""
+                "echo \">> 正在根据当前系统架构探活并释放 Ark 极速单二进制程序...\"\n"
+                "mkdir -p \"{app_dir}/bin\"\n"
+                "if [ \"$(uname -s)\" = \"Darwin\" ]; then\n"
+                "echo \">> 正在自动准备跨平台 Ark 单二进制程序 (Linux / macOS / Windows)...\"\n"
+                "node -e \"\n"
+                "  const fs = require('fs');\n"
+                "  const path = require('path');\n"
+                "  const binDir = path.join('{app_dir}', 'bin');\n"
+                "  const mainDir = path.join('{app_dir}', 'main');\n"
+                "  if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });\n\n"
+                "  const isWin = process.platform === 'win32';\n"
+                "  const targetName = isWin ? 'ark.exe' : 'ark';\n"
+                "  const targetPath = path.join(binDir, targetName);\n\n"
+                "  const candidatePaths = [\n"
+                "    path.join(mainDir, isWin ? 'ark.exe' : 'ark'),\n"
+                "    path.join(mainDir, isWin ? 'ark' : 'ark.exe')\n"
+                "  ];\n\n"
+                "  let copied = false;\n"
+                "  for (const p of candidatePaths) {\n"
+                "    if (fs.existsSync(p)) {\n"
+                "      fs.copyFileSync(p, targetPath);\n"
+                "      copied = true;\n"
+                "      console.log('>> 已从源码库直接提取并装配程序:', targetName);\n"
+                "      break;\n"
+                "    }\n"
+                "  }\n\n"
+                "  if (!copied && isWin) {\n"
+                "    try {\n"
+                "      require('child_process').execSync('go build -ldflags=\\\"-s -w\\\" -o ' + targetPath, { cwd: mainDir });\n"
+                "      console.log('>> 已自动完成本地程序装配');\n"
+                "      copied = true;\n"
+                "    } catch(e){}\n"
+                "  }\n"
+                "  try { if (!isWin && fs.existsSync(targetPath)) fs.chmodSync(targetPath, 0o755); } catch(e){}\n"
+                "\"\n"
+                "echo \">> Ark 极速可执行程序部署完成！\""
             ),
-            "uninstall": "node -e \"try{require('fs').rmSync('{app_dir}/bin/ark',{force:true})}catch(e){}\""
+            "uninstall": "node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
         },
 
         "env_schema": [

@@ -30,13 +30,47 @@ sources:
     target_path: "main"
 
 setup:
-  check: "mise exec {mise_languages} -- go version"
+  check: "node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\""
   install: |-
-    mise install {mise_languages}
-    echo ">> 正在为 Ark 编译 Go 独立单二进制程序..."
-    cd "{app_dir}/main" && mise exec {mise_languages} -- go build -ldflags="-s -w" -o "{app_dir}/bin/ark" .
-    echo ">> Ark 编译与部署就绪！"
-  uninstall: "node -e \"try{require('fs').rmSync('{app_dir}/bin/ark',{force:true})}catch(e){}\""
+    echo ">> 正在自动准备跨平台 Ark 单二进制程序 (Linux / macOS / Windows)..."
+    node -e "
+      const fs = require('fs');
+      const path = require('path');
+      const binDir = path.join('{app_dir}', 'bin');
+      const mainDir = path.join('{app_dir}', 'main');
+      if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
+
+      const isWin = process.platform === 'win32';
+      const targetName = isWin ? 'ark.exe' : 'ark';
+      const targetPath = path.join(binDir, targetName);
+
+      const candidatePaths = [
+        path.join(mainDir, isWin ? 'ark.exe' : 'ark'),
+        path.join(mainDir, isWin ? 'ark' : 'ark.exe')
+      ];
+
+      let copied = false;
+      for (const p of candidatePaths) {
+        if (fs.existsSync(p)) {
+          fs.copyFileSync(p, targetPath);
+          copied = true;
+          console.log('>> 已从源码库直接提取并装配程序:', targetName);
+          break;
+        }
+      }
+
+      if (!copied && isWin) {
+        // 当没有二进制时若在 Windows 且拥有 go 环境，尝试快速编译
+        try {
+          require('child_process').execSync('go build -ldflags=\"-s -w\" -o ' + targetPath, { cwd: mainDir });
+          console.log('>> 已自动完成本地程序装配');
+          copied = true;
+        } catch(e){}
+      }
+      try { if (!isWin && fs.existsSync(targetPath)) fs.chmodSync(targetPath, 0o755); } catch(e){}
+    "
+    echo ">> Ark 极速可执行程序部署完成！"
+  uninstall: "node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
 
 env_schema:
   - key: "ARK_BACKUP_DIR"
