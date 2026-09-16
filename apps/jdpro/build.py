@@ -213,7 +213,7 @@ def main():
         "last_commit": last_commit,
         "template": [
             {"tag": "JDPro"},
-            {"mise_languages": "node@20.18.0"}
+            {"mise_languages": "node@23.11.1"}
         ],
         "description": f"基于 Node.js 的京东自动化全功能任务集合，动态包含 {len(scanned_tasks)} 个福利任务，支持资产变动通知、东东农场、汪汪庄园、店铺签到、签到提现等",
         "icon": "https://img10.360buyimg.com/img/jfs/t1/158580/38/20042/13936/6090f4e3E06b86cf0/64dd78b273d6b05e.png",
@@ -233,7 +233,7 @@ def main():
         ],
 
         "setup": {
-            "check": "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v20')) process.exit(1)\"",
+            "check": "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v23')) process.exit(1)\"",
             "install": (
                 "mise install {mise_languages}\n"
                 "echo \">> 正在为 JDPro 设置 registry 镜像并清理旧 lockfile...\"\n"
