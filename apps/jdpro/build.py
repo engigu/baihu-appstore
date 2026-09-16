@@ -236,8 +236,6 @@ def main():
             "check": "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v20')) process.exit(1)\"",
             "install": (
                 "mise install {mise_languages}\n"
-                "echo \">> 正在为 JDPro 安装 Node.js 依赖...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production\n"
                 "echo \">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)...\"\n"
                 "cd \"{app_dir}/main\" && mise exec {mise_languages} -- node jd_indeps.js\n"
                 "echo \">> JDPro 依赖就绪！\""
