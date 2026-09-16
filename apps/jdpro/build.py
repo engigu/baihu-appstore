@@ -119,15 +119,20 @@ def parse_tasks_from_repo(repo_dir: Path):
         
         task_name = name_m.group(1).strip() if name_m else s_file.stem
 
-        # 2. 动态提取 Cron 定时表达式
-        cron_m = re.search(r'(?:cron|Cron)\s+[\'"]?([0-9\*\/\-\s]+)[\'"]?', content)
+        # 2. 动态提取 Cron 定时表达式 (支持 cron: 28 8,21 * * *、cron "0 0 * * *" 等各类常见格式)
+        cron_m = re.search(r'(?:cron|Cron)\s*:?\s*[\'"]?([0-9\*\/\-\,\?\s]+)[\'"]?', content)
         cron = cron_m.group(1).strip() if cron_m else ""
+        
+        # 清理多余尾缀与空白符
+        cron = re.sub(r'[\/\*]+\s*$', '', cron).strip()
         
         # 处理 5 位标准 Cron 补全为白虎 6 位 Cron（在前面加 0 秒）
         if cron:
             parts = cron.split()
             if len(parts) == 5:
                 cron = "0 " + cron
+            elif len(parts) != 6:
+                cron = "0 8 * * *"
         else:
             cron = "0 8 * * *"
 
@@ -140,7 +145,7 @@ def parse_tasks_from_repo(repo_dir: Path):
             "name": task_name,
             "source": "main",
             "command": exec_cmd,
-            "schedule": cron,
+            "default_cron": cron,
             "remark": f"JDPro 动态任务：{task_name} ({filename})"
         })
 

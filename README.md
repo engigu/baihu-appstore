@@ -22,6 +22,7 @@
   - [7. 运行场景预设模板 (Scenarios)](#7-运行场景预设模板-scenarios)
 - [三、 索引构建与全量索引 (apps.json)](#三-索引构建与全量索引-appsjson)
 - [四、 贡献指南 (How to Contribute)](#四-贡献指南-how-to-contribute)
+- [五、 版权与移除说明 (Notice & Opt-out Policy)](#五-版权与移除说明-notice--opt-out-policy)
 
 ---
 
@@ -226,3 +227,11 @@ mise x -- python build-all.py
 3. 参考上述规范在该目录下创建 `app.yaml`；
 4. 运行 `mise x -- python build-all.py` 确保构建通过且 `apps.json` 已正确包含你的应用；
 5. 提交 **Pull Request** 到 `main` 分支。
+
+---
+
+## 五、 版权与移除说明 (Notice & Opt-out Policy)
+
+白虎应用商店 (Baihu AppStore) 仅对开源/公开的自动化工具进行声明式配置与索引编排，所有源码版权归原上游仓库作者所有。
+
+* **原作者移除请求**：如果您是开源仓库的原作者，不希望您的项目被白虎应用商店收录，欢迎提交 **Pull Request**（直接删除 `apps/<your-app-id>` 目录）或提交 **Issue** 进行说明，我们会在确认后第一时间合并 PR 或将其从应用商店全量索引中下架移除。
