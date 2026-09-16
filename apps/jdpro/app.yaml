@@ -27,6 +27,8 @@ setup:
     mise install {mise_languages}
     echo ">> 正在为 JDPro 安装 Node.js 依赖..."
     cd "{app_dir}/main" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production
+    echo ">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)..."
+    cd "{app_dir}/main" && mise exec {mise_languages} -- node jd_indeps.js
     echo ">> JDPro 依赖就绪！"
   uninstall: mise exec {mise_languages} -- node -e "try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}"
 env_schema:

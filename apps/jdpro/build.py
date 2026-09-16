@@ -238,6 +238,8 @@ def main():
                 "mise install {mise_languages}\n"
                 "echo \">> 正在为 JDPro 安装 Node.js 依赖...\"\n"
                 "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production\n"
+                "echo \">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)...\"\n"
+                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- node jd_indeps.js\n"
                 "echo \">> JDPro 依赖就绪！\""
             ),
             "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}\""
