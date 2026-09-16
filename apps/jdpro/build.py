@@ -22,6 +22,13 @@ import argparse
 import subprocess
 from pathlib import Path
 
+def multiline_str_representer(dumper, data):
+    if '\n' in data:
+        return dumper.represent_scalar('tag:yaml.org,2002:str', data, style='|')
+    return dumper.represent_scalar('tag:yaml.org,2002:str', data)
+
+yaml.add_representer(str, multiline_str_representer)
+
 UPSTREAM_REPO = "https://github.com/6dylan6/jdpro.git"
 UPSTREAM_BRANCH = "main"
 
@@ -221,15 +228,14 @@ def main():
         ],
 
         "setup": {
-            "check": "mise exec {mise_languages} -- node -v 2>/dev/null | grep -q 'v20'",
+            "check": "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v20')) process.exit(1)\"",
             "install": (
                 "mise install {mise_languages}\n"
-                "mise use -g {mise_languages}\n"
                 "echo \">> 正在为 JDPro 安装 Node.js 依赖...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production || true\n"
-                "echo \">> JDPro 依赖就绪！\"\n"
+                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install --no-audit --no-fund --production\n"
+                "echo \">> JDPro 依赖就绪！\""
             ),
-            "uninstall": "rm -rf '{app_dir}/main/node_modules' 2>/dev/null || true"
+            "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}\""
         },
 
         "env_schema": [

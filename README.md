@@ -90,23 +90,25 @@ sources:
 # ------------------------------------------------------------------------------
 # 3. 原生 Shell 环境与依赖编排 (Setup)
 # ------------------------------------------------------------------------------
+# 需兼顾 Linux 与 Windows (PowerShell/CMD) 跨平台语法规范：
+#  - 避免使用仅 Linux 支持的 `2>/dev/null`、`grep` 或 `rm -rf`；
+#  - 推荐使用 Node/Python 原生脚本当做跨平台工具命令。
 setup:
-  # 依赖快速探测命令：退出码为 0 表示环境已满足，直接秒级跳过安装流程
-  check: "mise exec {mise_languages} -- python3 --version 2>/dev/null"
+  # 依赖快速探测命令：退出码 0 表示已就绪秒级跳过；非 0 则进入安装
+  check: "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v20')) process.exit(1)\""
 
   # 原生 Shell 安装脚本：安装依赖、拉取工具包或预编译产物
   install: |
     mise install {mise_languages}
-    echo ">> 正在安装 Python 依赖..."
-    pip install -q -r "{{app_dir}}/main/requirements.txt"
+    echo ">> 正在安装应用依赖..."
+    cd "{{app_dir}}/main" && mise exec {mise_languages} -- npm install --no-audit --no-fund
 
   # [可选] 后置初始化命令：安装/构建成功后自动执行的后置 Shell 脚本
   post_install: |
-    echo ">> 正在初始化配置文件与目录权限..."
-    cp -n "{{app_dir}}/main/config.example.json" "{{app_dir}}/main/config.json" 2>/dev/null || true
+    echo ">> 正在初始化配置文件..."
 
-  # [可选] 应用卸载时的清理命令
-  uninstall: "rm -rf '{{app_dir}}/main' 2>/dev/null || true"
+  # [可选] 应用卸载时的清理命令 (使用 Node.js fs.rmSync 零依赖跨平台清理)
+  uninstall: "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{{app_dir}}/main/node_modules',{recursive:true,force:true})}catch(e){}\""
 
 # ------------------------------------------------------------------------------
 # 4. 环境变量与凭证契约 (Env Schema)

@@ -24,8 +24,6 @@ setup:
   check: mise exec {mise_languages} -- node -v 2>/dev/null | grep -q 'v20'
   install: 'mise install {mise_languages}
 
-    mise use -g {mise_languages}
-
     echo ">> 正在为 JDPro 安装 Node.js 依赖..."
 
     cd "{app_dir}/main" && mise exec {mise_languages} -- npm install --no-audit --no-fund
