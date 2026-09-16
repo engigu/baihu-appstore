@@ -182,8 +182,26 @@ def parse_tasks_from_repo(repo_dir: Path):
     return tasks
 
 
-def generate_app_yaml(tasks: list) -> str:
-    """组装符合白虎规范 v1 的完整 YAML 清单"""
+def get_repo_last_commit_time(repo_dir: Path) -> str:
+    """获取 git 仓库的最后一次 commit 提交时间 (ISO 8601 格式)"""
+    if not repo_dir or not repo_dir.exists():
+        return ""
+    try:
+        res = subprocess.run(
+            ["git", "log", "-1", "--format=%cI"],
+            cwd=str(repo_dir),
+            capture_output=True,
+            text=True
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
+def generate_app_yaml(tasks, last_commit=""):
+    """把提取出来的 tasks 列表融合填充进规范的标准 YAML 模板"""
     tag = "{tag}"
     mise_languages = "{mise_languages}"
     tasks_yaml_lines = []
@@ -238,6 +256,7 @@ name: "B站全自动化助手 (BiliBiliToolPro)"
 version: "2.1.0"
 author: "RayWangQvQ"
 category: "福利签到"
+last_commit: "{last_commit}"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "dotnet@8.0.425"
@@ -450,7 +469,8 @@ def main():
             output_path = Path(__file__).resolve().parent / output_path
 
         print(f"\n[生成] 正在组装白虎规范应用配置清单 (v1)...")
-        yaml_content = generate_app_yaml(tasks)
+        last_commit = get_repo_last_commit_time(repo_dir)
+        yaml_content = generate_app_yaml(tasks, last_commit=last_commit)
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(yaml_content, encoding="utf-8")

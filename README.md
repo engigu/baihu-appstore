@@ -59,6 +59,7 @@ name: "我的示例应用"                    # 应用显示名称
 version: "1.0.0"                      # 应用语义化版本号
 author: "Baihu Community"             # 作者或维护团队
 category: "福利签到"                   # 分类 (福利签到 / 消息推送 / 工具脚本 / 运维管理 等)
+last_commit: "2026-09-16T11:14:00Z"   # 上游代码/仓库最近 Git Commit 提交时间 (ISO 8601)
 description: "这是一段关于该应用功能的详细说明..."
 icon: "https://example.com/icon.png"  # 图标 URL
 homepage: "https://github.com/..."    # 开源项目主页

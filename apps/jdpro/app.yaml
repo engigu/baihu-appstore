@@ -4,6 +4,7 @@ name: 京东全功能自动化助手 (JDPro)
 version: 1.0.0
 author: 6dylan6
 category: 福利签到
+last_commit: '2026-09-16T09:22:12+08:00'
 template:
 - tag: JDPro
 - mise_languages: node@20.18.0
@@ -79,18 +80,6 @@ tasks:
   command: mise exec {mise_languages} -- node main/jd_AutoEval.js
   schedule: 0 8 * * *
   remark: JDPro 动态任务：带图评价晒单 (jd_AutoEval.js)
-- id: jd_CheckCK
-  name: CK检测
-  source: main
-  command: mise exec {mise_languages} -- node main/jd_CheckCK.js
-  schedule: 0 6 6 6 6 *
-  remark: JDPro 动态任务：CK检测 (jd_CheckCK.js)
-- id: jd_OnceApply
-  name: 一键价保
-  source: main
-  command: mise exec {mise_languages} -- node main/jd_OnceApply.js
-  schedule: 0 8 * * *
-  remark: JDPro 动态任务：一键价保 (jd_OnceApply.js)
 - id: jd_bean_change
   name: 京东资产统计
   source: main
@@ -109,24 +98,30 @@ tasks:
   command: mise exec {mise_languages} -- python main/jd_beans_7days.py
   schedule: 0 8 * * *
   remark: JDPro 动态任务：豆子7天统计 (jd_beans_7days.py)
+- id: jd_CheckCK
+  name: CK检测
+  source: main
+  command: mise exec {mise_languages} -- node main/jd_CheckCK.js
+  schedule: 0 6 6 6 6 *
+  remark: JDPro 动态任务：CK检测 (jd_CheckCK.js)
 - id: jd_code2url
   name: 口令转链接
   source: main
   command: mise exec {mise_languages} -- node main/jd_code2url.js
   schedule: 0 8 * * *
   remark: JDPro 动态任务：口令转链接 (jd_code2url.js)
-- id: jd_delLjq
-  name: 批量删垃圾券
-  source: main
-  command: mise exec {mise_languages} -- node main/jd_delLjq.js
-  schedule: 0 8 * * *
-  remark: JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)
 - id: jd_deliverySign_sign
   name: 天天领豆
   source: main
   command: mise exec {mise_languages} -- node main/jd_deliverySign_sign.js
   schedule: 0 8 * * *
   remark: JDPro 动态任务：天天领豆 (jd_deliverySign_sign.js)
+- id: jd_delLjq
+  name: 批量删垃圾券
+  source: main
+  command: mise exec {mise_languages} -- node main/jd_delLjq.js
+  schedule: 0 8 * * *
+  remark: JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)
 - id: jd_dplhbshop
   name: 大牌浏览店铺
   source: main
@@ -247,6 +242,12 @@ tasks:
   command: mise exec {mise_languages} -- node main/jd_newfarmlottery.js
   schedule: 0 8 * * *
   remark: JDPro 动态任务：新农场幸运转盘 (jd_newfarmlottery.js)
+- id: jd_OnceApply
+  name: 一键价保
+  source: main
+  command: mise exec {mise_languages} -- node main/jd_OnceApply.js
+  schedule: 0 8 * * *
+  remark: JDPro 动态任务：一键价保 (jd_OnceApply.js)
 - id: jd_pkabeans
   name: 礼品卡领豆
   source: main
@@ -393,21 +394,19 @@ scenarios:
   task_presets:
     jd_AutoEval:
       enabled: false
-    jd_CheckCK:
-      enabled: true
-    jd_OnceApply:
-      enabled: false
     jd_bean_change:
       enabled: false
     jd_bean_info:
       enabled: false
     jd_beans_7days:
       enabled: false
+    jd_CheckCK:
+      enabled: true
     jd_code2url:
       enabled: false
-    jd_delLjq:
-      enabled: false
     jd_deliverySign_sign:
+      enabled: false
+    jd_delLjq:
       enabled: false
     jd_dplhbshop:
       enabled: true
@@ -449,6 +448,8 @@ scenarios:
       enabled: false
     jd_newfarmlottery:
       enabled: true
+    jd_OnceApply:
+      enabled: false
     jd_pkabeans:
       enabled: false
     jd_plantBean:
@@ -501,21 +502,19 @@ scenarios:
   task_presets:
     jd_AutoEval:
       enabled: false
-    jd_CheckCK:
-      enabled: true
-    jd_OnceApply:
-      enabled: false
     jd_bean_change:
       enabled: true
     jd_bean_info:
       enabled: false
     jd_beans_7days:
       enabled: false
+    jd_CheckCK:
+      enabled: true
     jd_code2url:
       enabled: false
-    jd_delLjq:
-      enabled: false
     jd_deliverySign_sign:
+      enabled: false
+    jd_delLjq:
       enabled: false
     jd_dplhbshop:
       enabled: false
@@ -556,6 +555,8 @@ scenarios:
     jd_luckyDraw:
       enabled: false
     jd_newfarmlottery:
+      enabled: false
+    jd_OnceApply:
       enabled: false
     jd_pkabeans:
       enabled: false
@@ -609,21 +610,19 @@ scenarios:
   task_presets:
     jd_AutoEval:
       enabled: true
-    jd_CheckCK:
-      enabled: true
-    jd_OnceApply:
-      enabled: true
     jd_bean_change:
       enabled: true
     jd_bean_info:
       enabled: true
     jd_beans_7days:
       enabled: true
+    jd_CheckCK:
+      enabled: true
     jd_code2url:
       enabled: true
-    jd_delLjq:
-      enabled: true
     jd_deliverySign_sign:
+      enabled: true
+    jd_delLjq:
       enabled: true
     jd_dplhbshop:
       enabled: true
@@ -664,6 +663,8 @@ scenarios:
     jd_luckyDraw:
       enabled: true
     jd_newfarmlottery:
+      enabled: true
+    jd_OnceApply:
       enabled: true
     jd_pkabeans:
       enabled: true

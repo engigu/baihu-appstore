@@ -11,6 +11,7 @@ name: "B站全自动化助手 (BiliBiliToolPro)"
 version: "2.1.0"
 author: "RayWangQvQ"
 category: "福利签到"
+last_commit: "2026-09-11T00:03:02+08:00"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "dotnet@8.0.425"
@@ -250,15 +251,6 @@ sync_rules:
       default_cron: "0 0 12 1 * *"
       enabled: false
 
-    - id: "vip_big_point"
-      name: "大会员大积分日常任务"
-      source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint"
-      default_cron: "0 7 1 * * *"
-      enabled: true
-
     - id: "vip_privilege"
       name: "大会员专属福利领取"
       source: "main"                  # 关联代码源 ID
@@ -267,6 +259,15 @@ sync_rules:
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipPrivilege"
       default_cron: "0 0 1 * * *"
       enabled: false
+
+    - id: "vip_big_point"
+      name: "大会员大积分日常任务"
+      source: "main"                  # 关联代码源 ID
+      tag: "{tag}"
+      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint"
+      default_cron: "0 7 1 * * *"
+      enabled: true
 
 # ==============================================================================
 # 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务
@@ -299,9 +300,9 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: false
-        vip_big_point:
-          enabled: false
         vip_privilege:
+          enabled: false
+        vip_big_point:
           enabled: false
 
   - id: "standard"
@@ -331,10 +332,10 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: false
-        vip_big_point:
-          enabled: false
         vip_privilege:
           enabled: true
+        vip_big_point:
+          enabled: false
 
   - id: "hardcore"
     name: "全天候极客全能模式"
@@ -363,7 +364,7 @@ scenarios:
           enabled: false
         unfollow_batched:
           enabled: true
-        vip_big_point:
-          enabled: true
         vip_privilege:
+          enabled: true
+        vip_big_point:
           enabled: true

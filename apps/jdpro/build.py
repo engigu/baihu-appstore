@@ -65,6 +65,24 @@ def clone_upstream_repo(proxy: str = "") -> tempfile.TemporaryDirectory:
     return None
 
 
+def get_repo_last_commit_time(repo_dir: Path) -> str:
+    """获取 git 仓库的最后一次 commit 提交时间 (ISO 8601 格式)"""
+    if not repo_dir or not repo_dir.exists():
+        return ""
+    try:
+        res = subprocess.run(
+            ["git", "log", "-1", "--format=%cI"],
+            cwd=str(repo_dir),
+            capture_output=True,
+            text=True
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            return res.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
 def parse_tasks_from_repo(repo_dir: Path):
     """动态扫描 jdpro 仓库中的所有 js / py 脚本文件，解析提取任务与 Cron"""
     tasks = []
@@ -171,6 +189,8 @@ def main():
         # 全功能模式：全部启用
         full_presets[t_id] = {"enabled": True}
 
+    last_commit = get_repo_last_commit_time(repo_dir)
+
     manifest = {
         "spec_version": "v1",
         "id": "jdpro",
@@ -178,6 +198,7 @@ def main():
         "version": "1.0.0",
         "author": "6dylan6",
         "category": "福利签到",
+        "last_commit": last_commit,
         "template": [
             {"tag": "JDPro"},
             {"mise_languages": "node@20.18.0"}

@@ -43,7 +43,7 @@ def parse_yaml_metadata(yaml_path: Path) -> dict:
 
     if isinstance(doc, dict):
         # 基础元数据收集
-        for key in ["spec_version", "id", "name", "version", "author", "category", "description", "icon", "homepage"]:
+        for key in ["spec_version", "id", "name", "version", "author", "category", "last_commit", "description", "icon", "homepage"]:
             if key in doc and doc[key] is not None:
                 meta[key] = doc[key]
 
@@ -78,11 +78,17 @@ def build_app(app_dir: Path, proxy: str = "") -> bool:
     output_file = config.get("output", "app.yaml")
 
     # 构建启动命令
+    py_bin = f'"{sys.executable}"' if sys.executable else "python"
     if command_str:
-        cmd = command_str
+        if command_str.startswith("python3 "):
+            cmd = f"{py_bin} {command_str[8:]}"
+        elif command_str.startswith("python "):
+            cmd = f"{py_bin} {command_str[7:]}"
+        else:
+            cmd = command_str
     elif script:
         if language == "python":
-            cmd = f"python {script}"
+            cmd = f"{py_bin} {script}"
         elif language in ("node", "nodejs", "javascript"):
             cmd = f"node {script}"
         elif language in ("bash", "sh", "shell"):
