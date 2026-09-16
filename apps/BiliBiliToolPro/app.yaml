@@ -57,7 +57,8 @@ setup:
     echo ">> 后置初始化准备就绪！"
 
   # [可选] 应用卸载清理
-  uninstall: mise exec {mise_languages} -- node -e "['bin','main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{app_dir}/'+p, {recursive: true, force: true}))"
+  uninstall: |
+    mise exec {mise_languages} -- node -e "['bin','main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{app_dir}/'+p, {recursive: true, force: true}))"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
