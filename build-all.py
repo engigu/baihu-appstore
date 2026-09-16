@@ -188,6 +188,17 @@ def main():
     index_file = root_dir / "apps.json"
     index_file.write_text(json.dumps(index_data, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    # 4. 向 jsDelivr 发起 Purge 刷新全球 CDN 缓存请求
+    try:
+        import urllib.request
+        purge_url = "https://purge.jsdelivr.net/gh/engigu/baihu-appstore@main/apps.json"
+        req = urllib.request.Request(purge_url, headers={"User-Agent": "BaihuAppStoreBuilder/1.0"})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            if resp.status == 200:
+                print(f"[CDN Purge] 已成功向 jsDelivr 发送全球 CDN 缓存强刷请求!")
+    except Exception as e:
+        print(f"[CDN Purge 提示] jsDelivr 缓存刷新请求跳过/超时: {e}")
+
     print("\n########################################################")
     print("                     构建总结报告")
     print("########################################################")

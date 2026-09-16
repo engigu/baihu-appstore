@@ -105,3 +105,9 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+      - name: Purge jsDelivr CDN Cache
+        run: |
+          echo ">> 正在强刷 jsDelivr CDN 全球节点缓存..."
+          curl -s https://purge.jsdelivr.net/gh/engigu/baihu-appstore@main/apps.json || true
+
