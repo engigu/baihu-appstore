@@ -240,7 +240,7 @@ def main():
                 "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm config set registry https://registry.npmmirror.com/\n"
                 "cd \"{app_dir}/main\" && mise exec {mise_languages} -- node -e \"try{require('fs').unlinkSync('package-lock.json')}catch(e){}\"\n"
                 "echo \">> 正在安装 JDPro 基础 Node.js 依赖...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install dotenv got axios crypto-js tslib qrcode-terminal typescript png-js jsdom tunnel --legacy-peer-deps --no-audit --no-fund --omit=dev\n"
+                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install got@11.8.6 ds@2.0.2 png-js@1.0.0 date-fns@3.6.0 axios@1.7.4 crypto-js@4.2.0 request@2.88.2 jsdom@24.1.1 moment@2.30.1 cheerio@1.0.0 https-proxy-agent@7.0.5 tough-cookie tunnel dotenv qrcode-terminal tslib typescript --legacy-peer-deps --no-audit --no-fund --omit=dev\n"
                 "echo \">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)...\"\n"
                 "cd \"{app_dir}/main\" && mise exec {mise_languages} -- node jd_indeps.js\n"
                 "echo \">> JDPro 依赖就绪！\""
