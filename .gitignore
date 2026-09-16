@@ -7,3 +7,7 @@ __pycache__/
 *.log
 .DS_Store
 Thumbs.db
+
+# Cloudflare Worker 独立统计服务目录
+cf-stats-worker/
+.wrangler/
