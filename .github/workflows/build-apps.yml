@@ -77,7 +77,7 @@ jobs:
       - name: Build Baihu CLI Binary
         run: |
           cd baihu-panel-src
-          CGO_ENABLED=1 go build -o ../baihu ./main.go
+          CGO_ENABLED=0 go build -o ../baihu ./main.go
           cd ..
           chmod +x ./baihu
 
