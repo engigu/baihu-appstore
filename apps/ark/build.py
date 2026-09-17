@@ -63,13 +63,14 @@ def main():
         ],
 
         "setup": {
-            "check": "mise exec {mise_languages} -- node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\"",
+            "check": "mise exec {mise_languages} -- node -e \"const fs=require('fs');const d=process.env.APP_DIR||process.cwd();process.exit(fs.existsSync(require('path').join(d,'bin','ark'))||fs.existsSync(require('path').join(d,'bin','ark.exe'))?0:1)\"",
             "install": (
                 "echo \">> 正在从 GitHub Release 下载 Ark 预编译二进制程序...\"\n"
                 "mise exec {mise_languages} -- node -e \"\n"
                 "  const fs = require('fs');\n"
                 "  const path = require('path');\n"
-                "  const binDir = path.join('{app_dir}', 'bin');\n"
+                "  const appDir = process.env.APP_DIR || process.cwd();\n"
+                "  const binDir = path.join(appDir, 'bin');\n"
                 "  if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });\n\n"
                 "  const isWin = process.platform === 'win32';\n"
                 "  const targetName = isWin ? 'ark.exe' : 'ark';\n"
@@ -120,7 +121,7 @@ def main():
                 "\"\n"
                 "echo \">> Ark 部署完成！\""
             ),
-            "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
+            "uninstall": "mise exec {mise_languages} -- node -e \"const p=require('path');const d=process.env.APP_DIR||process.cwd();try{require('fs').rmSync(p.join(d,'bin'),{recursive:true,force:true})}catch(e){}\""
         },
 
         "env_schema": [

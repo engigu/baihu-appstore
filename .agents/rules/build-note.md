@@ -84,7 +84,7 @@ trigger: always_on
 2. **`install`（必填）**：
    - 依赖安装、预编译或 Release 二进制拉取 Shell 脚本。
    - **跨平台严禁使用纯 Linux 命令**（严禁单独使用 `2>/dev/null`、`grep`、`uname -s`、`rm -rf` 等）。
-   - **预编译程序直接拉取模式**：如果支持直接下载 Release 二进制，优先通过跨平台脚本（如 Node.js http/https）下载对应的操作系统架构产物，并配置多个国内加速镜像源容错轮询。
+   - **预编译程序直接拉取模式**：如果支持直接下载 Release 二进制，优先通过跨平台脚本（如 Node.js http/https）下载对应的操作系统架构产物，并配置多个国内加速镜像源容错轮询。在 Node.js 脚本中拼接路径时，推荐使用 `process.env.APP_DIR || process.cwd()`，避免 Windows 平台下反斜杠在字符串插值中被当作转义字符破坏路径。
    - **源码依赖/编译模式**：需调用 `mise install {mise_languages}` 确保语言环境，并通过 `mise exec {mise_languages} -- ...` 执行安装/构建命令。
 3. **`post_install`（可选）**：
    - 安装或编译完成后自动执行的后置初始化 Shell 脚本。
