@@ -54,12 +54,14 @@ setup:
           process.exit(1);
         }
         const currentUrl = mirrors[index];
-        const fetchUrl = (url) => {
-          const client = url.startsWith('https') ? require('https') : require('http');
+        const fetchUrl = (reqUrl) => {
+          const client = reqUrl.startsWith('https') ? require('https') : require('http');
           const file = fs.createWriteStream(targetPath);
-          const req = client.get(url, (res) => {
+          const req = client.get(reqUrl, (res) => {
             if (res.statusCode === 301 || res.statusCode === 302) {
-              fetchUrl(res.headers.location);
+              file.close();
+              const redirectUrl = new URL(res.headers.location, reqUrl).href;
+              fetchUrl(redirectUrl);
             } else if (res.statusCode === 200) {
               res.pipe(file);
               file.on('finish', () => {
