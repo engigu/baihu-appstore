@@ -140,7 +140,7 @@ def parse_tasks_from_repo(repo_dir: Path):
             enabled = target_code in default_enabled_codes
 
             if target_code == "TryFix":
-                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj && echo '>> 缓存清理与重新编译就绪！'"
+                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj' && echo '>> 缓存清理与重新编译就绪！'"
             else:
                 cmd = f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks={target_code}"
 
@@ -166,7 +166,7 @@ def parse_tasks_from_repo(repo_dir: Path):
         ]
         for t_id, t_name, t_code, t_cron, t_en in fallback_targets:
             if t_code == "TryFix":
-                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj && echo '>> 缓存清理与重新编译就绪！'"
+                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj' && echo '>> 缓存清理与重新编译就绪！'"
             else:
                 cmd = f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks={t_code}"
 
@@ -304,7 +304,7 @@ setup:
   install: |
     mise install {mise_languages}
     echo ">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)..."
-    mise exec {mise_languages} -- dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
+    mise exec {mise_languages} -- dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
     echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
   # [可选] 后置初始化命令：编译成功后自动执行的后置 Shell 脚本
@@ -313,7 +313,7 @@ setup:
 
   # [可选] 应用卸载清理
   uninstall: |
-    mise exec {mise_languages} -- node -e "['bin','main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{{app_dir}}/'+p, {{recursive: true, force: true}}))"
+    mise exec {mise_languages} -- node -e "['bin','main/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{{app_dir}}/'+p, {{recursive: true, force: true}}))"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
