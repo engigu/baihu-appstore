@@ -36,7 +36,7 @@ def main():
         "category": "系统工具",
         "last_commit": "2026-09-16T00:00:00+08:00",
         "template": [
-            {"tag": "ark"},
+            {"tag": "Ark"},
             {"mise_languages": "node@23.11.1"}
         ],
         "description": "基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。",
