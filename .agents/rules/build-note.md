@@ -122,7 +122,7 @@ trigger: always_on
   - **`id`**（必填）：子任务内部 ID。
   - **`name`**（必填）：子任务中文显示名称。
   - **`source`**（必填）：关联的 `sources` 中的源 ID（通常为 `main`）。
-  - **`command`**（必填）：具体执行的 CLI 命令（可引用 `{app_dir}` 变量，如 `{app_dir}/bin/ark check`）。
+  - **`command`**（必填）：具体执行的纯原生 CLI 命令（如 `dotnet Ray.BiliBiliTool.Console.dll` 或 `node main/jd_CheckCK.js`；**坚决不写 `mise exec` 前缀**，多语言外壳由白虎面板自动动态包裹）。
   - **`default_cron`**（必填）：默认 Cron 定时表达式（6 位或 5 位标准 Cron）。
   - **`enabled`**（必填）：默认是否启用（`true` / `false`）。
   - **`tag`**（可选）：关联标签，推荐统一填 `"{tag}"`，与环境变量保持一致归集。

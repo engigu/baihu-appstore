@@ -138,7 +138,7 @@ def parse_tasks_from_repo(repo_dir: Path):
 
         task_id = s_file.stem
         is_python = filename.endswith(".py")
-        exec_cmd = f"mise exec {{mise_languages}} -- python main/{filename}" if is_python else f"mise exec {{mise_languages}} -- node main/{filename}"
+        exec_cmd = f"python main/{filename}" if is_python else f"node main/{filename}"
 
         tasks.append({
             "id": task_id,

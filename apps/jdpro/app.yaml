@@ -86,313 +86,313 @@ tasks:
 - id: jd_AutoEval
   name: 带图评价晒单
   source: main
-  command: mise exec {mise_languages} -- node main/jd_AutoEval.js
+  command: node main/jd_AutoEval.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：带图评价晒单 (jd_AutoEval.js)
-- id: jd_CheckCK
-  name: CK检测
-  source: main
-  command: mise exec {mise_languages} -- node main/jd_CheckCK.js
-  default_cron: 0 8 * * *
-  remark: JDPro 动态任务：CK检测 (jd_CheckCK.js)
-- id: jd_OnceApply
-  name: 一键价保
-  source: main
-  command: mise exec {mise_languages} -- node main/jd_OnceApply.js
-  default_cron: 0 8 * * *
-  remark: JDPro 动态任务：一键价保 (jd_OnceApply.js)
 - id: jd_bean_change
   name: 京东资产统计
   source: main
-  command: mise exec {mise_languages} -- node main/jd_bean_change.js
+  command: node main/jd_bean_change.js
   default_cron: 0 28 8,21 * * *
   remark: JDPro 动态任务：京东资产统计 (jd_bean_change.js)
 - id: jd_bean_info
   name: 京豆详情统计
   source: main
-  command: mise exec {mise_languages} -- node main/jd_bean_info.js
+  command: node main/jd_bean_info.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：京豆详情统计 (jd_bean_info.js)
 - id: jd_beans_7days
   name: 豆子7天统计
   source: main
-  command: mise exec {mise_languages} -- python main/jd_beans_7days.py
+  command: python main/jd_beans_7days.py
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：豆子7天统计 (jd_beans_7days.py)
+- id: jd_CheckCK
+  name: CK检测
+  source: main
+  command: node main/jd_CheckCK.js
+  default_cron: 0 8 * * *
+  remark: JDPro 动态任务：CK检测 (jd_CheckCK.js)
 - id: jd_code2url
   name: 口令转链接
   source: main
-  command: mise exec {mise_languages} -- node main/jd_code2url.js
+  command: node main/jd_code2url.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：口令转链接 (jd_code2url.js)
-- id: jd_delLjq
-  name: 批量删垃圾券
-  source: main
-  command: mise exec {mise_languages} -- node main/jd_delLjq.js
-  default_cron: 0 8 * * *
-  remark: JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)
 - id: jd_deliverySign_sign
   name: 天天领豆
   source: main
-  command: mise exec {mise_languages} -- node main/jd_deliverySign_sign.js
+  command: node main/jd_deliverySign_sign.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：天天领豆 (jd_deliverySign_sign.js)
+- id: jd_delLjq
+  name: 批量删垃圾券
+  source: main
+  command: node main/jd_delLjq.js
+  default_cron: 0 8 * * *
+  remark: JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)
 - id: jd_dplhbshop
   name: 大牌浏览店铺
   source: main
-  command: mise exec {mise_languages} -- node main/jd_dplhbshop.js
+  command: node main/jd_dplhbshop.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：大牌浏览店铺 (jd_dplhbshop.js)
 - id: jd_dpqd_main
   name: 批量店铺签到（活动查询）
   source: main
-  command: mise exec {mise_languages} -- node main/jd_dpqd_main.js
+  command: node main/jd_dpqd_main.js
   default_cron: 0 1 1 1 1 *
   remark: JDPro 动态任务：批量店铺签到（活动查询） (jd_dpqd_main.js)
 - id: jd_dpqd_sign
   name: 批量店铺签到
   source: main
-  command: mise exec {mise_languages} -- node main/jd_dpqd_sign.js
+  command: node main/jd_dpqd_sign.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：批量店铺签到 (jd_dpqd_sign.js)
 - id: jd_dpqd_single
   name: 单个店铺签到
   source: main
-  command: mise exec {mise_languages} -- node main/jd_dpqd_single.js
+  command: node main/jd_dpqd_single.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：单个店铺签到 (jd_dpqd_single.js)
 - id: jd_dwapp
   name: 积分换话费
   source: main
-  command: mise exec {mise_languages} -- node main/jd_dwapp.js
+  command: node main/jd_dwapp.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：积分换话费 (jd_dwapp.js)
 - id: jd_farmnew_ck_help
   name: 新农场CK顺序助力
   source: main
-  command: mise exec {mise_languages} -- node main/jd_farmnew_ck_help.js
+  command: node main/jd_farmnew_ck_help.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：新农场CK顺序助力 (jd_farmnew_ck_help.js)
 - id: jd_farmnew_code_help
   name: 新农场助力码助力
   source: main
-  command: mise exec {mise_languages} -- node main/jd_farmnew_code_help.js
+  command: node main/jd_farmnew_code_help.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：新农场助力码助力 (jd_farmnew_code_help.js)
 - id: jd_fish_help
   name: 金融捕鱼助力
   source: main
-  command: mise exec {mise_languages} -- node main/jd_fish_help.js
+  command: node main/jd_fish_help.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：金融捕鱼助力 (jd_fish_help.js)
 - id: jd_fruit_new
   name: 新农场任务
   source: main
-  command: mise exec {mise_languages} -- node main/jd_fruit_new.js
+  command: node main/jd_fruit_new.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：新农场任务 (jd_fruit_new.js)
 - id: jd_hdyxzd
   name: 互动游戏赚豆
   source: main
-  command: mise exec {mise_languages} -- node main/jd_hdyxzd.js
+  command: node main/jd_hdyxzd.js
   default_cron: 0 6 8,16 * * *
   remark: JDPro 动态任务：互动游戏赚豆 (jd_hdyxzd.js)
 - id: jd_hssign
   name: hs每日签到
   source: main
-  command: mise exec {mise_languages} -- node main/jd_hssign.js
+  command: node main/jd_hssign.js
   default_cron: 0 15 8 * * *
   remark: JDPro 动态任务：hs每日签到 (jd_hssign.js)
 - id: jd_ifdraw
   name: IF任务抽奖合集
   source: main
-  command: mise exec {mise_languages} -- node main/jd_ifdraw.js
+  command: node main/jd_ifdraw.js
   default_cron: 0 33 7,15 * * *
   remark: JDPro 动态任务：IF任务抽奖合集 (jd_ifdraw.js)
 - id: jd_jingpai
   name: 竞拍竞猜
   source: main
-  command: mise exec {mise_languages} -- node main/jd_jingpai.js
+  command: node main/jd_jingpai.js
   default_cron: 0 1 1 1 1 *
   remark: JDPro 动态任务：竞拍竞猜 (jd_jingpai.js)
 - id: jd_joypark_leave
   name: 汪汪庄园离线收金币
   source: main
-  command: mise exec {mise_languages} -- node main/jd_joypark_leave.js
+  command: node main/jd_joypark_leave.js
   default_cron: 0 1 1 29 2 *
   remark: JDPro 动态任务：汪汪庄园离线收金币 (jd_joypark_leave.js)
 - id: jd_joypark_task
   name: 汪汪庄园任务
   source: main
-  command: mise exec {mise_languages} -- node main/jd_joypark_task.js
+  command: node main/jd_joypark_task.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：汪汪庄园任务 (jd_joypark_task.js)
 - id: jd_jrddzjd
   name: 天天赚京豆
   source: main
-  command: mise exec {mise_languages} -- node main/jd_jrddzjd.js
+  command: node main/jd_jrddzjd.js
   default_cron: 0 50 8,16 * * *
   remark: JDPro 动态任务：天天赚京豆 (jd_jrddzjd.js)
 - id: jd_jrttlqy
   name: 天天领权益
   source: main
-  command: mise exec {mise_languages} -- node main/jd_jrttlqy.js
+  command: node main/jd_jrttlqy.js
   default_cron: 0 23 9,13 * * *
   remark: JDPro 动态任务：天天领权益 (jd_jrttlqy.js)
 - id: jd_lmdraw
   name: LM任务抽奖合集
   source: main
-  command: mise exec {mise_languages} -- node main/jd_lmdraw.js
+  command: node main/jd_lmdraw.js
   default_cron: 0 29 2 29 2 *
   remark: JDPro 动态任务：LM任务抽奖合集 (jd_lmdraw.js)
 - id: jd_luckyDraw
   name: 幸运抽奖
   source: main
-  command: mise exec {mise_languages} -- node main/jd_luckyDraw.js
+  command: node main/jd_luckyDraw.js
   default_cron: 0 1 1 1 1 *
   remark: JDPro 动态任务：幸运抽奖 (jd_luckyDraw.js)
 - id: jd_newfarmlottery
   name: 新农场幸运转盘
   source: main
-  command: mise exec {mise_languages} -- node main/jd_newfarmlottery.js
+  command: node main/jd_newfarmlottery.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：新农场幸运转盘 (jd_newfarmlottery.js)
+- id: jd_OnceApply
+  name: 一键价保
+  source: main
+  command: node main/jd_OnceApply.js
+  default_cron: 0 8 * * *
+  remark: JDPro 动态任务：一键价保 (jd_OnceApply.js)
 - id: jd_pkabeans
   name: 礼品卡领豆
   source: main
-  command: mise exec {mise_languages} -- node main/jd_pkabeans.js
+  command: node main/jd_pkabeans.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：礼品卡领豆 (jd_pkabeans.js)
 - id: jd_plantBean
   name: 种豆得豆任务
   source: main
-  command: mise exec {mise_languages} -- node main/jd_plantBean.js
+  command: node main/jd_plantBean.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：种豆得豆任务 (jd_plantBean.js)
 - id: jd_plantBean_help
   name: 种豆得豆互助
   source: main
-  command: mise exec {mise_languages} -- node main/jd_plantBean_help.js
+  command: node main/jd_plantBean_help.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：种豆得豆互助 (jd_plantBean_help.js)
 - id: jd_proxy_check
   name: 代理检测
   source: main
-  command: mise exec {mise_languages} -- node main/jd_proxy_check.js
+  command: node main/jd_proxy_check.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：代理检测 (jd_proxy_check.js)
 - id: jd_qy_sign
   name: 权益中心签到
   source: main
-  command: mise exec {mise_languages} -- node main/jd_qy_sign.js
+  command: node main/jd_qy_sign.js
   default_cron: 0 21 10 * * *
   remark: JDPro 动态任务：权益中心签到 (jd_qy_sign.js)
 - id: jd_rankVote
   name: 排行榜投票
   source: main
-  command: mise exec {mise_languages} -- node main/jd_rankVote.js
+  command: node main/jd_rankVote.js
   default_cron: 0 1 1 1 1 *
   remark: JDPro 动态任务：排行榜投票 (jd_rankVote.js)
 - id: jd_rmvcart
   name: 清空购物车
   source: main
-  command: mise exec {mise_languages} -- node main/jd_rmvcart.js
+  command: node main/jd_rmvcart.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：清空购物车 (jd_rmvcart.js)
 - id: jd_signbeanact_
   name: 天天领豆
   source: main
-  command: mise exec {mise_languages} -- node main/jd_signbeanact_.js
+  command: node main/jd_signbeanact_.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：天天领豆 (jd_signbeanact_.js)
 - id: jd_sldraw
   name: SL任务抽奖合集
   source: main
-  command: mise exec {mise_languages} -- node main/jd_sldraw.js
+  command: node main/jd_sldraw.js
   default_cron: 0 1 1 1 1 *
   remark: JDPro 动态任务：SL任务抽奖合集 (jd_sldraw.js)
 - id: jd_taskop
   name: 重复任务优化
   source: main
-  command: mise exec {mise_languages} -- python main/jd_taskop.py
+  command: python main/jd_taskop.py
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：重复任务优化 (jd_taskop.py)
 - id: jd_ttgd
   name: 天天刮京豆
   source: main
-  command: mise exec {mise_languages} -- node main/jd_ttgd.js
+  command: node main/jd_ttgd.js
   default_cron: 0 21 4,15 * * *
   remark: JDPro 动态任务：天天刮京豆 (jd_ttgd.js)
 - id: jd_unsubscribe
   name: 批量取关店铺和商品
   source: main
-  command: mise exec {mise_languages} -- node main/jd_unsubscribe.js
+  command: node main/jd_unsubscribe.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：批量取关店铺和商品 (jd_unsubscribe.js)
 - id: jd_vu50
   name: V你50超市卡
   source: main
-  command: mise exec {mise_languages} -- node main/jd_vu50.js
+  command: node main/jd_vu50.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：V你50超市卡 (jd_vu50.js)
 - id: jd_water_new
   name: 新农场浇水
   source: main
-  command: mise exec {mise_languages} -- node main/jd_water_new.js
+  command: node main/jd_water_new.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：新农场浇水 (jd_water_new.js)
 - id: jd_wduoyu
   name: 多投多赚
   source: main
-  command: mise exec {mise_languages} -- node main/jd_wduoyu.js
+  command: node main/jd_wduoyu.js
   default_cron: 0 29 2 29 2 *
   remark: JDPro 动态任务：多投多赚 (jd_wduoyu.js)
 - id: jd_weGameLottery
   name: 互动游戏签到
   source: main
-  command: mise exec {mise_languages} -- node main/jd_weGameLottery.js
+  command: node main/jd_weGameLottery.js
   default_cron: 0 12 7,15 * * *
   remark: JDPro 动态任务：互动游戏签到 (jd_weGameLottery.js)
 - id: jd_wsck
   name: wskey本地转换
   source: main
-  command: mise exec {mise_languages} -- python main/jd_wsck.py
+  command: python main/jd_wsck.py
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：wskey本地转换 (jd_wsck.py)
 - id: jd_wskey
   name: wskey转换
   source: main
-  command: mise exec {mise_languages} -- python main/jd_wskey.py
+  command: python main/jd_wskey.py
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：wskey转换 (jd_wskey.py)
 - id: jd_wwmanor_merge
   name: 汪汪庄园合成
   source: main
-  command: mise exec {mise_languages} -- node main/jd_wwmanor_merge.js
+  command: node main/jd_wwmanor_merge.js
   default_cron: 0 2 2 29 2 *
   remark: JDPro 动态任务：汪汪庄园合成 (jd_wwmanor_merge.js)
 - id: jd_wxtoken_m
   name: 快速缓存token
   source: main
-  command: mise exec {mise_languages} -- node main/jd_wxtoken_m.js
+  command: node main/jd_wxtoken_m.js
   default_cron: 0 8 * * *
   remark: JDPro 动态任务：快速缓存token (jd_wxtoken_m.js)
 - id: jd_xsjx
   name: 限时京喜
   source: main
-  command: mise exec {mise_languages} -- node main/jd_xsjx.js
+  command: node main/jd_xsjx.js
   default_cron: 0 38 7,19 * * *
   remark: JDPro 动态任务：限时京喜 (jd_xsjx.js)
 - id: jd_yssign
   name: ys每日签到
   source: main
-  command: mise exec {mise_languages} -- node main/jd_yssign.js
+  command: node main/jd_yssign.js
   default_cron: 0 20 9 * * *
   remark: JDPro 动态任务：ys每日签到 (jd_yssign.js)
 - id: jd_zjindan
   name: 天天砸金蛋
   source: main
-  command: mise exec {mise_languages} -- node main/jd_zjindan.js
+  command: node main/jd_zjindan.js
   default_cron: 0 10 9,15 * * *
   remark: JDPro 动态任务：天天砸金蛋 (jd_zjindan.js)
 scenarios:
@@ -403,21 +403,19 @@ scenarios:
   task_presets:
     jd_AutoEval:
       enabled: false
-    jd_CheckCK:
-      enabled: true
-    jd_OnceApply:
-      enabled: false
     jd_bean_change:
       enabled: false
     jd_bean_info:
       enabled: false
     jd_beans_7days:
       enabled: false
+    jd_CheckCK:
+      enabled: true
     jd_code2url:
       enabled: false
-    jd_delLjq:
-      enabled: false
     jd_deliverySign_sign:
+      enabled: false
+    jd_delLjq:
       enabled: false
     jd_dplhbshop:
       enabled: true
@@ -459,6 +457,8 @@ scenarios:
       enabled: false
     jd_newfarmlottery:
       enabled: true
+    jd_OnceApply:
+      enabled: false
     jd_pkabeans:
       enabled: false
     jd_plantBean:
@@ -511,21 +511,19 @@ scenarios:
   task_presets:
     jd_AutoEval:
       enabled: false
-    jd_CheckCK:
-      enabled: true
-    jd_OnceApply:
-      enabled: false
     jd_bean_change:
       enabled: true
     jd_bean_info:
       enabled: false
     jd_beans_7days:
       enabled: false
+    jd_CheckCK:
+      enabled: true
     jd_code2url:
       enabled: false
-    jd_delLjq:
-      enabled: false
     jd_deliverySign_sign:
+      enabled: false
+    jd_delLjq:
       enabled: false
     jd_dplhbshop:
       enabled: false
@@ -566,6 +564,8 @@ scenarios:
     jd_luckyDraw:
       enabled: false
     jd_newfarmlottery:
+      enabled: false
+    jd_OnceApply:
       enabled: false
     jd_pkabeans:
       enabled: false
@@ -619,21 +619,19 @@ scenarios:
   task_presets:
     jd_AutoEval:
       enabled: true
-    jd_CheckCK:
-      enabled: true
-    jd_OnceApply:
-      enabled: true
     jd_bean_change:
       enabled: true
     jd_bean_info:
       enabled: true
     jd_beans_7days:
       enabled: true
+    jd_CheckCK:
+      enabled: true
     jd_code2url:
       enabled: true
-    jd_delLjq:
-      enabled: true
     jd_deliverySign_sign:
+      enabled: true
+    jd_delLjq:
       enabled: true
     jd_dplhbshop:
       enabled: true
@@ -674,6 +672,8 @@ scenarios:
     jd_luckyDraw:
       enabled: true
     jd_newfarmlottery:
+      enabled: true
+    jd_OnceApply:
       enabled: true
     jd_pkabeans:
       enabled: true

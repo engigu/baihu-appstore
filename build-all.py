@@ -43,7 +43,7 @@ def parse_yaml_metadata(yaml_path: Path) -> dict:
 
     if isinstance(doc, dict):
         # 基础元数据收集
-        for key in ["spec_version", "id", "name", "version", "author", "category", "last_commit", "description", "icon", "homepage", "build_opts", "schedule", "schedule_opts"]:
+        for key in ["spec_version", "id", "name", "version", "author", "category", "last_commit", "description", "icon", "homepage", "build_opts", "schedule", "schedule_opts", "template", "languages"]:
             if key in doc and doc[key] is not None:
                 meta[key] = doc[key]
 
