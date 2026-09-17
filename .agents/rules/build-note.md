@@ -39,14 +39,15 @@ trigger: always_on
 
 ## 二、 模板宏与占位符定义 (`template`)
 
-用于声明宏变量，在 `app.yaml` 中以 `{变量名}`（如 `{tag}`、`{mise_languages}`、`{app_dir}`）形式保留，面板在运行时自动进行全局插值替换：
+用于声明宏变量，在 `app.yaml` 中以 `{变量名}`（如 `{tag}`、`{mise_languages}`、`{app_dir}`）形式保留，面板在运行时自动进行全局插值替换与语言契约解析：
 
 - **格式**：键值对数组（列表），例如：
   ```yaml
   template:
-    - tag: "Ark"
-    - mise_languages: "go@1.22.5"
+    - tag: "BiliBiliToolPro"
+    - mise_languages: "dotnet@8.0.425 node@23"
   ```
+  *说明*：`mise_languages` 声明应用运行时所依附的多语言环境，**只能以空格分隔多个语言版本（严禁使用逗号，例如 `"dotnet@8.0.425 node@23"`）**。白虎面板在安装/解析 Manifest 时会自动提取并渲染至 UI 面板中供用户选择调整。
 - **预装底座环境说明**：
   白虎面板系统镜像默认预装标准环境，推荐优先复用以实现秒级启动与免重复安装：
   - **Node.js**: `node@23.11.1`
