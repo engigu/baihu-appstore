@@ -13,6 +13,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      panel_branch:
+        description: 'baihu-panel 验证分支'
+        required: false
+        default: 'main'
+        type: string
   schedule:
     # 每天北京时间早晨 8:00 (UTC 0:00) 自动同步构建上游规则
     - cron: '0 0 * * *'
@@ -55,6 +61,38 @@ jobs:
       - name: Run Global AppStore Builder
         run: |
           python build-all.py
+
+      - name: Set up Go 1.26
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Checkout Baihu Panel Engine
+        uses: actions/checkout@v4
+        with:
+          repository: 'engigu/baihu-panel'
+          ref: ${{ github.event.inputs.panel_branch || 'main' }}
+          path: 'baihu-panel-src'
+
+      - name: Build Baihu CLI Binary
+        run: |
+          cd baihu-panel-src
+          CGO_ENABLED=1 go build -o ../baihu ./main.go
+          cd ..
+          chmod +x ./baihu
+
+      - name: Validate Applications with Baihu CLI (SQLite Dry-Run)
+        run: |
+          export DB_TYPE="sqlite"
+          export DB_DSN="./baihu_ci_test.db"
+          for app_file in apps/*/app.yaml; do
+            if [ -f "$app_file" ]; then
+              echo "=================================================="
+              echo ">> 正在对应用规范进行校验与硬核部署测试: $app_file"
+              echo "=================================================="
+              ./baihu app apply "$app_file" --rebuild || exit 1
+            fi
+          done
 
       - name: Commit and Push Changes (Push & Dispatch Only)
         if: github.event_name != 'pull_request'
