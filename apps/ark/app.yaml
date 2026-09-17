@@ -13,13 +13,7 @@ icon: https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png
 homepage: https://github.com/duorameng/ark
 sources:
 - id: main
-  source_type: git
-  source_url: https://github.com/duorameng/ark.git
-  branch: main
-  path: ''
-  single_file: false
-  proxy: ghproxy
-  target_path: main
+  source_type: 'null'
 setup:
   check: node -e "const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)"
   install: |-

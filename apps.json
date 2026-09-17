@@ -1,8 +1,131 @@
 {
   "version": "v1",
-  "generated_at": "2026-09-17T00:42:21Z",
+  "generated_at": "2026-09-17T00:55:04Z",
   "total_apps": 3,
   "apps": [
+    {
+      "spec_version": "v1",
+      "id": "ark",
+      "name": "Ark 班轮货运管理终端",
+      "version": "1.0.0",
+      "author": "duorameng",
+      "category": "系统工具",
+      "last_commit": "2026-09-16T00:00:00+08:00",
+      "description": "基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。",
+      "icon": "https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png",
+      "homepage": "https://github.com/duorameng/ark",
+      "tasks": [
+        {
+          "id": "ark_check",
+          "name": "环境与密钥就绪自检",
+          "source": "main",
+          "command": "{app_dir}/bin/ark check",
+          "default_cron": "0 0 8 * * *",
+          "enabled": true,
+          "remark": "自检权限、配置、密钥加密与网络连通闭环"
+        },
+        {
+          "id": "ark_board",
+          "name": "每日增量快照打包登船交付",
+          "source": "main",
+          "command": "{app_dir}/bin/ark board --day --auto-scan",
+          "default_cron": "0 0 2 * * *",
+          "enabled": true,
+          "remark": "全自动探测变更，按天打标并分层增量推送至云端注册表"
+        },
+        {
+          "id": "ark_dry",
+          "name": "模拟演练与全量校验 (Dry Run)",
+          "source": "main",
+          "command": "{app_dir}/bin/ark dry",
+          "default_cron": "0 0 12 * * *",
+          "enabled": false,
+          "remark": "模拟分层打包与冷热度排序验证，不产生真实网络推流"
+        }
+      ],
+      "tasks_count": 3,
+      "env_schema": [
+        {
+          "key": "ARK_BACKUP_DIR",
+          "label": "工作区源路径 (ARK_BACKUP_DIR)",
+          "type": "normal",
+          "tag": "{tag}",
+          "required": true,
+          "description": "需要备份与同步的工作区根目录路径（如 /root/workspace）",
+          "placeholder": "/root/workspace"
+        },
+        {
+          "key": "ARK_SEAL_KEY",
+          "label": "AES-256 封条加密口令",
+          "type": "secret",
+          "tag": "{tag}",
+          "required": false,
+          "description": "端到端 AES-256-CBC 封条自定义加密口令",
+          "placeholder": "YourSecretKey"
+        },
+        {
+          "key": "ARK_REGISTRY_TYPE",
+          "label": "目标注册表通道 (ali/gh/both)",
+          "type": "normal",
+          "tag": "{tag}",
+          "required": false,
+          "default": "gh",
+          "description": "远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)",
+          "placeholder": "gh"
+        },
+        {
+          "key": "ARK_REPOSITORY",
+          "label": "目标镜像仓库路径",
+          "type": "normal",
+          "tag": "{tag}",
+          "required": false,
+          "description": "目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）",
+          "placeholder": "ghcr.io/duorameng/ark"
+        }
+      ],
+      "scenarios": [
+        {
+          "id": "standard",
+          "name": "标准自动打包备份模式",
+          "description": "启用每日定时快照登船交付与环境健康度自检",
+          "default": true,
+          "task_presets": {
+            "ark_check": {
+              "enabled": true
+            },
+            "ark_board": {
+              "enabled": true
+            },
+            "ark_dry": {
+              "enabled": false
+            }
+          }
+        },
+        {
+          "id": "minimal",
+          "name": "仅环境自检模式",
+          "description": "仅保留基础状态检测，挂起定时打包",
+          "default": false,
+          "task_presets": {
+            "ark_check": {
+              "enabled": true
+            },
+            "ark_board": {
+              "enabled": false
+            },
+            "ark_dry": {
+              "enabled": false
+            }
+          }
+        }
+      ],
+      "scenarios_count": 2,
+      "app_dir": "ark",
+      "manifest_path": "apps/ark/app.yaml",
+      "manifest_raw": "spec_version: v1\nid: ark\nname: Ark 班轮货运管理终端\nversion: 1.0.0\nauthor: duorameng\ncategory: 系统工具\nlast_commit: '2026-09-16T00:00:00+08:00'\ntemplate:\n- tag: Ark\n- mise_languages: go@1.22.5\ndescription: 基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。\nicon: https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png\nhomepage: https://github.com/duorameng/ark\nsources:\n- id: main\n  source_type: 'null'\nsetup:\n  check: node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\"\n  install: |-\n    echo \">> 正在从 GitHub Release 下载 Ark 预编译二进制程序...\"\n    node -e \"\n      const fs = require('fs');\n      const path = require('path');\n      const binDir = path.join('{app_dir}', 'bin');\n      if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });\n\n      const isWin = process.platform === 'win32';\n      const targetName = isWin ? 'ark.exe' : 'ark';\n      const targetPath = path.join(binDir, targetName);\n      const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');\n      const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;\n      const mirrors = [\n        'https://ghproxy.net/' + rawUrl,\n        'https://mirror.ghproxy.com/' + rawUrl,\n        'https://ghfast.top/' + rawUrl,\n        'https://ghproxy.com/' + rawUrl,\n        rawUrl\n      ];\n\n      const tryDownload = (index) => {\n        if (index >= mirrors.length) {\n          console.error('>> [错误] 所有加速源均下载失败，请检查网络连通性');\n          process.exit(1);\n        }\n        const currentUrl = mirrors[index];\n        const fetchUrl = (url) => {\n          const client = url.startsWith('https') ? require('https') : require('http');\n          const file = fs.createWriteStream(targetPath);\n          const req = client.get(url, (res) => {\n            if (res.statusCode === 301 || res.statusCode === 302) {\n              fetchUrl(res.headers.location);\n            } else if (res.statusCode === 200) {\n              res.pipe(file);\n              file.on('finish', () => {\n                file.close();\n                if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }\n                console.log('>> Ark Release 二进制下载就绪:', targetName);\n              });\n            } else {\n              file.close();\n              try { fs.unlinkSync(targetPath); } catch(e){}\n              tryDownload(index + 1);\n            }\n          });\n          req.on('error', () => {\n            file.close();\n            try { fs.unlinkSync(targetPath); } catch(e){}\n            tryDownload(index + 1);\n          });\n        };\n        fetchUrl(currentUrl);\n      };\n      tryDownload(0);\n    \"\n    echo \">> Ark 部署完成！\"\n  uninstall: node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\"\nenv_schema:\n- key: ARK_BACKUP_DIR\n  label: 工作区源路径 (ARK_BACKUP_DIR)\n  type: normal\n  tag: '{tag}'\n  required: true\n  description: 需要备份与同步的工作区根目录路径（如 /root/workspace）\n  placeholder: /root/workspace\n- key: ARK_SEAL_KEY\n  label: AES-256 封条加密口令\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: 端到端 AES-256-CBC 封条自定义加密口令\n  placeholder: YourSecretKey\n- key: ARK_REGISTRY_TYPE\n  label: 目标注册表通道 (ali/gh/both)\n  type: normal\n  tag: '{tag}'\n  required: false\n  default: gh\n  description: '远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)'\n  placeholder: gh\n- key: ARK_REPOSITORY\n  label: 目标镜像仓库路径\n  type: normal\n  tag: '{tag}'\n  required: false\n  description: 目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）\n  placeholder: ghcr.io/duorameng/ark\ntasks:\n- id: ark_check\n  name: 环境与密钥就绪自检\n  source: main\n  command: '{app_dir}/bin/ark check'\n  default_cron: 0 0 8 * * *\n  enabled: true\n  remark: 自检权限、配置、密钥加密与网络连通闭环\n- id: ark_board\n  name: 每日增量快照打包登船交付\n  source: main\n  command: '{app_dir}/bin/ark board --day --auto-scan'\n  default_cron: 0 0 2 * * *\n  enabled: true\n  remark: 全自动探测变更，按天打标并分层增量推送至云端注册表\n- id: ark_dry\n  name: 模拟演练与全量校验 (Dry Run)\n  source: main\n  command: '{app_dir}/bin/ark dry'\n  default_cron: 0 0 12 * * *\n  enabled: false\n  remark: 模拟分层打包与冷热度排序验证，不产生真实网络推流\nscenarios:\n- id: standard\n  name: 标准自动打包备份模式\n  description: 启用每日定时快照登船交付与环境健康度自检\n  default: true\n  task_presets:\n    ark_check:\n      enabled: true\n    ark_board:\n      enabled: true\n    ark_dry:\n      enabled: false\n- id: minimal\n  name: 仅环境自检模式\n  description: 仅保留基础状态检测，挂起定时打包\n  default: false\n  task_presets:\n    ark_check:\n      enabled: true\n    ark_board:\n      enabled: false\n    ark_dry:\n      enabled: false\n",
+      "manifest_url": "https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/ark/app.yaml",
+      "updated_at": "2026-09-17T00:55:03Z"
+    },
     {
       "spec_version": "v1",
       "id": "bilibili-tool-pro",
@@ -126,16 +249,6 @@
           "enabled": false
         },
         {
-          "id": "vip_big_point",
-          "name": "大会员大积分日常任务",
-          "source": "main",
-          "tag": "{tag}",
-          "language": "{mise_languages}",
-          "command": "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint",
-          "default_cron": "0 7 1 * * *",
-          "enabled": true
-        },
-        {
           "id": "vip_privilege",
           "name": "大会员专属福利领取",
           "source": "main",
@@ -144,6 +257,16 @@
           "command": "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipPrivilege",
           "default_cron": "0 0 1 * * *",
           "enabled": false
+        },
+        {
+          "id": "vip_big_point",
+          "name": "大会员大积分日常任务",
+          "source": "main",
+          "tag": "{tag}",
+          "language": "{mise_languages}",
+          "command": "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint",
+          "default_cron": "0 7 1 * * *",
+          "enabled": true
         }
       ],
       "tasks_count": 13,
@@ -279,10 +402,10 @@
             "unfollow_batched": {
               "enabled": false
             },
-            "vip_big_point": {
+            "vip_privilege": {
               "enabled": false
             },
-            "vip_privilege": {
+            "vip_big_point": {
               "enabled": false
             }
           }
@@ -326,11 +449,11 @@
             "unfollow_batched": {
               "enabled": false
             },
-            "vip_big_point": {
-              "enabled": false
-            },
             "vip_privilege": {
               "enabled": true
+            },
+            "vip_big_point": {
+              "enabled": false
             }
           }
         },
@@ -373,10 +496,10 @@
             "unfollow_batched": {
               "enabled": true
             },
-            "vip_big_point": {
+            "vip_privilege": {
               "enabled": true
             },
-            "vip_privilege": {
+            "vip_big_point": {
               "enabled": true
             }
           }
@@ -385,132 +508,9 @@
       "scenarios_count": 3,
       "app_dir": "BiliBiliToolPro",
       "manifest_path": "apps/BiliBiliToolPro/app.yaml",
-      "manifest_raw": "# ==============================================================================\n# 白虎面板应用规范定义文件 (Baihu Application Specification)\n# 应用名称: B站全自动化助手 (BiliBiliToolPro)\n# 规范版本: v1\n# 本文件由 apps/BiliBiliToolPro/build.py 自动构建生成 (请勿手动修改)\n# ==============================================================================\n\nspec_version: \"v1\"\nid: \"bilibili-tool-pro\"\nname: \"B站全自动化助手 (BiliBiliToolPro)\"\nversion: \"2.1.0\"\nauthor: \"RayWangQvQ\"\ncategory: \"福利签到\"\nlast_commit: \"2026-09-11T00:03:02+08:00\"\ntemplate:\n  - tag: \"BiliBiliToolPro\"\n  - mise_languages: \"dotnet@8.0.425\"\ndescription: \"基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理\"\nicon: \"https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png\"\nhomepage: \"https://github.com/RayWangQvQ/BiliBiliToolPro\"\n\n# ==============================================================================\n# 1. 脚本代码源列表 (Sources) —— 支持定义多个源，100% 复用 baihu reposync 参数规范\n# ==============================================================================\n# 支持配置多个独立的代码源（例如：主业务仓库 + 外部公共工具库 + 单文件补丁直链）\n# 单源场景下亦支持使用单个 source: { ... } 对象，系统自动兼容处理\nsources:\n  - id: \"main\"                        # [必填] 源唯一标识符（在下方 tasks 中通过 source: \"main\" 关联）\n    source_type: \"git\"                # 对应 --source-type: git (Git仓库) 或 url (单文件下载)\n    source_url: \"https://github.com/RayWangQvQ/BiliBiliToolPro.git\" # 对应 --source-url: 上游开源项目地址\n    branch: \"main\"       # 对应 --branch: 指定主分支\n    path: \"\"                          # 对应 --path: 留空全量检出\n    single_file: false                # 对应 --single-file: 仓库模式\n    proxy: \"ghproxy\"                  # 对应 --proxy: none / ghproxy / mirror / custom\n    proxy_url: \"\"                     # 对应 --proxy-url: 自定义代理前缀\n    auth_token: \"\"                    # 对应 --auth-token: 认证 Token\n    http_proxy: \"\"                    # 对应 --http-proxy: HTTP/SOCKS 代理\n    blacklist: \"qinglong/DefaultTasks|.git|baihu/DefaultTasks/dev\" # 对应 --blacklist: 过滤冗余目录\n    target_path: \"main\"               # 相对存储目录（留空默认按 id 存入 sources/{id}）\n\n# ==============================================================================\n# 2. 原生 Shell 环境与依赖编排 (Setup) —— 拒绝死板配置，原生 Shell 极速执行\n# ==============================================================================\nsetup:\n  # [可选] 依赖快速探测：已就绪时毫秒级跳过安装\n  check: \"mise exec {mise_languages} -- dotnet --version\"\n\n  # [必填] 依赖安装命令：安装 {mise_languages} 并一次性预编译到 bin 目录，彻底避免每次任务重复 build\n  install: |\n    mise install {mise_languages}\n    echo \">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)...\"\n    mise exec {mise_languages} -- dotnet publish -c Release -o \"{app_dir}/bin\" \"{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj\"\n    echo \">> 预编译就绪，运行时将 0.1s 极速启动！\"\n\n  # [可选] 后置初始化命令：编译成功后自动执行的后置 Shell 脚本\n  post_install: |\n    echo \">> 后置初始化准备就绪！\"\n\n  # [可选] 应用卸载清理\n  uninstall: |\n    mise exec {mise_languages} -- node -e \"['bin','main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{app_dir}/'+p, {recursive: true, force: true}))\"\n\n# ==============================================================================\n# 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单\n# ==============================================================================\nenv_schema:\n  - key: \"Ray_BiliBiliCookies__0\"\n    label: \"主账号凭证 (Cookie)\"\n    type: \"secret\"\n    tag: \"{tag}\"\n    required: true\n    description: \"登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）\"\n    placeholder: \"SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;\"\n\n  - key: \"Ray_BiliBiliCookies__1\"\n    label: \"账号 2 凭证 (多账号可选)\"\n    type: \"secret\"\n    tag: \"{tag}\"\n    required: false\n    description: \"多账号模式：第二个账号的 Cookie 字符串\"\n\n  - key: \"Ray_DailyTaskConfig__NumberOfCoins\"\n    label: \"每日投币数量\"\n    type: \"select\"\n    tag: \"{tag}\"\n    required: false\n    default: \"5\"\n    options:\n      - label: \"不投币 (0枚)\"\n        value: \"0\"\n      - label: \"保底 (1枚)\"\n        value: \"1\"\n      - label: \"拿满经验 (5枚)\"\n        value: \"5\"\n\n  - key: \"Ray_DailyTaskConfig__SelectLike\"\n    label: \"投币同时点赞\"\n    type: \"boolean\"\n    tag: \"{tag}\"\n    default: true\n    description: \"投币成功后是否同时点赞视频\"\n\n  - key: \"Ray_LiveLotteryTaskConfig__AutoSendDanmu\"\n    label: \"天选抽奖自动发弹幕\"\n    type: \"boolean\"\n    tag: \"{tag}\"\n    default: true\n    description: \"遇到弹幕抽奖时是否自动发送所需弹幕\"\n\n  - key: \"BaihuConfig__Token\"\n    label: \"白虎面板 API Token\"\n    type: \"secret\"\n    tag: \"{tag}\"\n    required: false\n    description: \"白虎面板 OpenAPI 访问令牌。配置后运行【扫码登录】任务即可自动持久化 Cookie 回白虎面板！\"\n    placeholder: \"在白虎面板【系统设置】->【OpenAPI】中创建\"\n\n  - key: \"BA_URL\"\n    label: \"白虎面板访问地址\"\n    type: \"string\"\n    tag: \"{tag}\"\n    required: false\n    default: \"http://localhost:8052\"\n    description: \"白虎面板的内部或局域网访问地址，用于接收扫码登录成功的 Cookie 回调\"\n\n  - key: \"Ray_PlatformType\"\n    label: \"运行平台类型\"\n    type: \"string\"\n    tag: \"{tag}\"\n    required: false\n    default: \"Baihu\"\n    description: \"指定底层运行平台为 Baihu，完全复刻青龙/白虎原生调度行为，实现扫码登录后自动将 Cookie 同步保存回面板\"\n\n  - key: \"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT\"\n    label: \"精简容器兼容模式 (无ICU)\"\n    type: \"boolean\"\n    tag: \"{tag}\"\n    default: true\n    description: \"复刻 bili_task_base.sh 中的全局环境变量，解决跨平台与精简容器中 ICU 异常\"\n\n# ==============================================================================\n# 4. 任务生成与映射规则 (Sync Rules) —— 规则独立热更新，无须上游仓库 Git Push\n# ==============================================================================\nsync_rules:\n  # 全局任务默认参数\n  defaults:\n    timeout: 30                       # 默认超时（分钟）\n    retry_count: 1                    # 失败重试次数\n    retry_interval: 15                # 失败重试间隔（秒）\n    work_dir: \"{app_dir}/bin\"         # 运行已编译的产物目录，实现 0.1 秒极速启动\n    language: \"{mise_languages}\"              # 执行环境全部锁定为 {mise_languages}\n\n  # 任务清单定义（解耦上游注释，标准化任务编排）\n  tasks:\n    - id: \"charge\"\n      name: \"大会员每月B币券充电\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Charge\"\n      default_cron: \"0 0 12 * * *\"\n      enabled: false\n\n    - id: \"daily\"\n      name: \"每日基础经验与投币任务\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Daily\"\n      default_cron: \"0 0 9 * * *\"\n      enabled: true\n\n    - id: \"live_fans_medal\"\n      name: \"直播粉丝牌亲密度打卡\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveFansMedal\"\n      default_cron: \"0 5 0 * * *\"\n      enabled: false\n\n    - id: \"live_lottery\"\n      name: \"天选时刻高频巡检抽奖\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveLottery\"\n      default_cron: \"0 0 13 * * *\"\n      enabled: false\n\n    - id: \"login\"\n      name: \"扫码登录 (自动持久化Cookie)\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Login\"\n      default_cron: \"0 0 0 1 1 *\"\n      enabled: false\n\n    - id: \"manga\"\n      name: \"漫画任务\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Manga\"\n      default_cron: \"0 0 14 * * *\"\n      enabled: true\n\n    - id: \"manga_privilege\"\n      name: \"大会员漫画权益领取\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=MangaPrivilege\"\n      default_cron: \"0 0 15 * * *\"\n      enabled: true\n\n    - id: \"silver2_coin\"\n      name: \"直播间银瓜子兑换硬币\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Silver2Coin\"\n      default_cron: \"0 0 8 * * *\"\n      enabled: true\n\n    - id: \"test\"\n      name: \"Cookie 有效性测试\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Test\"\n      default_cron: \"0 0 8 * * *\"\n      enabled: false\n\n    - id: \"try_fix\"\n      name: \"清理缓存并重新预编译 (尝试修复异常)\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj && echo '>> 缓存清理与重新编译就绪！'\"\n      default_cron: \"0 0 0 1 1 *\"\n      enabled: false\n\n    - id: \"unfollow_batched\"\n      name: \"批量取关失效主播\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=UnfollowBatched\"\n      default_cron: \"0 0 12 1 * *\"\n      enabled: false\n\n    - id: \"vip_big_point\"\n      name: \"大会员大积分日常任务\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint\"\n      default_cron: \"0 7 1 * * *\"\n      enabled: true\n\n    - id: \"vip_privilege\"\n      name: \"大会员专属福利领取\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipPrivilege\"\n      default_cron: \"0 0 1 * * *\"\n      enabled: false\n\n# ==============================================================================\n# 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务\n# ==============================================================================\nscenarios:\n  - id: \"minimal\"\n    name: \"佛系保级模式\"\n    description: \"仅执行每日登录与基础签到，耗时极短且完全防风控，适合只需保级的账号\"\n    default: false\n    task_presets:\n        charge:\n          enabled: false\n        daily:\n          enabled: true\n        live_fans_medal:\n          enabled: false\n        live_lottery:\n          enabled: false\n        login:\n          enabled: false\n        manga:\n          enabled: false\n        manga_privilege:\n          enabled: false\n        silver2_coin:\n          enabled: false\n        test:\n          enabled: false\n        try_fix:\n          enabled: false\n        unfollow_batched:\n          enabled: false\n        vip_big_point:\n          enabled: false\n        vip_privilege:\n          enabled: false\n\n  - id: \"standard\"\n    name: \"标准日常满收益模式 (推荐)\"\n    description: \"开启每日签到、自动投币、大会员大积分与漫画权益领取，最大化每日经验与收益\"\n    default: true\n    task_presets:\n        charge:\n          enabled: true\n        daily:\n          enabled: true\n        live_fans_medal:\n          enabled: false\n        live_lottery:\n          enabled: false\n        login:\n          enabled: false\n        manga:\n          enabled: true\n        manga_privilege:\n          enabled: true\n        silver2_coin:\n          enabled: true\n        test:\n          enabled: false\n        try_fix:\n          enabled: false\n        unfollow_batched:\n          enabled: false\n        vip_big_point:\n          enabled: false\n        vip_privilege:\n          enabled: true\n\n  - id: \"hardcore\"\n    name: \"全天候极客全能模式\"\n    description: \"开启全部自动化功能，包括每 15 分钟一次的高频直播间天选时刻自动巡检抽奖\"\n    task_presets:\n        charge:\n          enabled: true\n        daily:\n          enabled: true\n        live_fans_medal:\n          enabled: true\n        live_lottery:\n          enabled: true\n          cron: \"0 */20 * * * *\"\n        login:\n          enabled: false\n        manga:\n          enabled: true\n        manga_privilege:\n          enabled: true\n        silver2_coin:\n          enabled: true\n        test:\n          enabled: false\n        try_fix:\n          enabled: false\n        unfollow_batched:\n          enabled: true\n        vip_big_point:\n          enabled: true\n        vip_privilege:\n          enabled: true\n",
+      "manifest_raw": "# ==============================================================================\n# 白虎面板应用规范定义文件 (Baihu Application Specification)\n# 应用名称: B站全自动化助手 (BiliBiliToolPro)\n# 规范版本: v1\n# 本文件由 apps/BiliBiliToolPro/build.py 自动构建生成 (请勿手动修改)\n# ==============================================================================\n\nspec_version: \"v1\"\nid: \"bilibili-tool-pro\"\nname: \"B站全自动化助手 (BiliBiliToolPro)\"\nversion: \"2.1.0\"\nauthor: \"RayWangQvQ\"\ncategory: \"福利签到\"\nlast_commit: \"2026-09-11T00:03:02+08:00\"\ntemplate:\n  - tag: \"BiliBiliToolPro\"\n  - mise_languages: \"dotnet@8.0.425\"\ndescription: \"基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理\"\nicon: \"https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png\"\nhomepage: \"https://github.com/RayWangQvQ/BiliBiliToolPro\"\n\n# ==============================================================================\n# 1. 脚本代码源列表 (Sources) —— 支持定义多个源，100% 复用 baihu reposync 参数规范\n# ==============================================================================\n# 支持配置多个独立的代码源（例如：主业务仓库 + 外部公共工具库 + 单文件补丁直链）\n# 单源场景下亦支持使用单个 source: { ... } 对象，系统自动兼容处理\nsources:\n  - id: \"main\"                        # [必填] 源唯一标识符（在下方 tasks 中通过 source: \"main\" 关联）\n    source_type: \"git\"                # 对应 --source-type: git (Git仓库) 或 url (单文件下载)\n    source_url: \"https://github.com/RayWangQvQ/BiliBiliToolPro.git\" # 对应 --source-url: 上游开源项目地址\n    branch: \"main\"       # 对应 --branch: 指定主分支\n    path: \"\"                          # 对应 --path: 留空全量检出\n    single_file: false                # 对应 --single-file: 仓库模式\n    proxy: \"ghproxy\"                  # 对应 --proxy: none / ghproxy / mirror / custom\n    proxy_url: \"\"                     # 对应 --proxy-url: 自定义代理前缀\n    auth_token: \"\"                    # 对应 --auth-token: 认证 Token\n    http_proxy: \"\"                    # 对应 --http-proxy: HTTP/SOCKS 代理\n    blacklist: \"qinglong/DefaultTasks|.git|baihu/DefaultTasks/dev\" # 对应 --blacklist: 过滤冗余目录\n    target_path: \"main\"               # 相对存储目录（留空默认按 id 存入 sources/{id}）\n\n# ==============================================================================\n# 2. 原生 Shell 环境与依赖编排 (Setup) —— 拒绝死板配置，原生 Shell 极速执行\n# ==============================================================================\nsetup:\n  # [可选] 依赖快速探测：已就绪时毫秒级跳过安装\n  check: \"mise exec {mise_languages} -- dotnet --version\"\n\n  # [必填] 依赖安装命令：安装 {mise_languages} 并一次性预编译到 bin 目录，彻底避免每次任务重复 build\n  install: |\n    mise install {mise_languages}\n    echo \">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)...\"\n    mise exec {mise_languages} -- dotnet publish -c Release -o \"{app_dir}/bin\" \"{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj\"\n    echo \">> 预编译就绪，运行时将 0.1s 极速启动！\"\n\n  # [可选] 后置初始化命令：编译成功后自动执行的后置 Shell 脚本\n  post_install: |\n    echo \">> 后置初始化准备就绪！\"\n\n  # [可选] 应用卸载清理\n  uninstall: |\n    mise exec {mise_languages} -- node -e \"['bin','main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{app_dir}/'+p, {recursive: true, force: true}))\"\n\n# ==============================================================================\n# 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单\n# ==============================================================================\nenv_schema:\n  - key: \"Ray_BiliBiliCookies__0\"\n    label: \"主账号凭证 (Cookie)\"\n    type: \"secret\"\n    tag: \"{tag}\"\n    required: true\n    description: \"登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）\"\n    placeholder: \"SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;\"\n\n  - key: \"Ray_BiliBiliCookies__1\"\n    label: \"账号 2 凭证 (多账号可选)\"\n    type: \"secret\"\n    tag: \"{tag}\"\n    required: false\n    description: \"多账号模式：第二个账号的 Cookie 字符串\"\n\n  - key: \"Ray_DailyTaskConfig__NumberOfCoins\"\n    label: \"每日投币数量\"\n    type: \"select\"\n    tag: \"{tag}\"\n    required: false\n    default: \"5\"\n    options:\n      - label: \"不投币 (0枚)\"\n        value: \"0\"\n      - label: \"保底 (1枚)\"\n        value: \"1\"\n      - label: \"拿满经验 (5枚)\"\n        value: \"5\"\n\n  - key: \"Ray_DailyTaskConfig__SelectLike\"\n    label: \"投币同时点赞\"\n    type: \"boolean\"\n    tag: \"{tag}\"\n    default: true\n    description: \"投币成功后是否同时点赞视频\"\n\n  - key: \"Ray_LiveLotteryTaskConfig__AutoSendDanmu\"\n    label: \"天选抽奖自动发弹幕\"\n    type: \"boolean\"\n    tag: \"{tag}\"\n    default: true\n    description: \"遇到弹幕抽奖时是否自动发送所需弹幕\"\n\n  - key: \"BaihuConfig__Token\"\n    label: \"白虎面板 API Token\"\n    type: \"secret\"\n    tag: \"{tag}\"\n    required: false\n    description: \"白虎面板 OpenAPI 访问令牌。配置后运行【扫码登录】任务即可自动持久化 Cookie 回白虎面板！\"\n    placeholder: \"在白虎面板【系统设置】->【OpenAPI】中创建\"\n\n  - key: \"BA_URL\"\n    label: \"白虎面板访问地址\"\n    type: \"string\"\n    tag: \"{tag}\"\n    required: false\n    default: \"http://localhost:8052\"\n    description: \"白虎面板的内部或局域网访问地址，用于接收扫码登录成功的 Cookie 回调\"\n\n  - key: \"Ray_PlatformType\"\n    label: \"运行平台类型\"\n    type: \"string\"\n    tag: \"{tag}\"\n    required: false\n    default: \"Baihu\"\n    description: \"指定底层运行平台为 Baihu，完全复刻青龙/白虎原生调度行为，实现扫码登录后自动将 Cookie 同步保存回面板\"\n\n  - key: \"DOTNET_SYSTEM_GLOBALIZATION_INVARIANT\"\n    label: \"精简容器兼容模式 (无ICU)\"\n    type: \"boolean\"\n    tag: \"{tag}\"\n    default: true\n    description: \"复刻 bili_task_base.sh 中的全局环境变量，解决跨平台与精简容器中 ICU 异常\"\n\n# ==============================================================================\n# 4. 任务生成与映射规则 (Sync Rules) —— 规则独立热更新，无须上游仓库 Git Push\n# ==============================================================================\nsync_rules:\n  # 全局任务默认参数\n  defaults:\n    timeout: 30                       # 默认超时（分钟）\n    retry_count: 1                    # 失败重试次数\n    retry_interval: 15                # 失败重试间隔（秒）\n    work_dir: \"{app_dir}/bin\"         # 运行已编译的产物目录，实现 0.1 秒极速启动\n    language: \"{mise_languages}\"              # 执行环境全部锁定为 {mise_languages}\n\n  # 任务清单定义（解耦上游注释，标准化任务编排）\n  tasks:\n    - id: \"charge\"\n      name: \"大会员每月B币券充电\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Charge\"\n      default_cron: \"0 0 12 * * *\"\n      enabled: false\n\n    - id: \"daily\"\n      name: \"每日基础经验与投币任务\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Daily\"\n      default_cron: \"0 0 9 * * *\"\n      enabled: true\n\n    - id: \"live_fans_medal\"\n      name: \"直播粉丝牌亲密度打卡\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveFansMedal\"\n      default_cron: \"0 5 0 * * *\"\n      enabled: false\n\n    - id: \"live_lottery\"\n      name: \"天选时刻高频巡检抽奖\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveLottery\"\n      default_cron: \"0 0 13 * * *\"\n      enabled: false\n\n    - id: \"login\"\n      name: \"扫码登录 (自动持久化Cookie)\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Login\"\n      default_cron: \"0 0 0 1 1 *\"\n      enabled: false\n\n    - id: \"manga\"\n      name: \"漫画任务\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Manga\"\n      default_cron: \"0 0 14 * * *\"\n      enabled: true\n\n    - id: \"manga_privilege\"\n      name: \"大会员漫画权益领取\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=MangaPrivilege\"\n      default_cron: \"0 0 15 * * *\"\n      enabled: true\n\n    - id: \"silver2_coin\"\n      name: \"直播间银瓜子兑换硬币\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Silver2Coin\"\n      default_cron: \"0 0 8 * * *\"\n      enabled: true\n\n    - id: \"test\"\n      name: \"Cookie 有效性测试\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Test\"\n      default_cron: \"0 0 8 * * *\"\n      enabled: false\n\n    - id: \"try_fix\"\n      name: \"清理缓存并重新预编译 (尝试修复异常)\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/RayWangQvQ_BiliBiliToolPro/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj && echo '>> 缓存清理与重新编译就绪！'\"\n      default_cron: \"0 0 0 1 1 *\"\n      enabled: false\n\n    - id: \"unfollow_batched\"\n      name: \"批量取关失效主播\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=UnfollowBatched\"\n      default_cron: \"0 0 12 1 * *\"\n      enabled: false\n\n    - id: \"vip_privilege\"\n      name: \"大会员专属福利领取\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipPrivilege\"\n      default_cron: \"0 0 1 * * *\"\n      enabled: false\n\n    - id: \"vip_big_point\"\n      name: \"大会员大积分日常任务\"\n      source: \"main\"                  # 关联代码源 ID\n      tag: \"{tag}\"\n      language: \"{mise_languages}\"            # 运行时锁定 {mise_languages}\n      command: \"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint\"\n      default_cron: \"0 7 1 * * *\"\n      enabled: true\n\n# ==============================================================================\n# 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务\n# ==============================================================================\nscenarios:\n  - id: \"minimal\"\n    name: \"佛系保级模式\"\n    description: \"仅执行每日登录与基础签到，耗时极短且完全防风控，适合只需保级的账号\"\n    default: false\n    task_presets:\n        charge:\n          enabled: false\n        daily:\n          enabled: true\n        live_fans_medal:\n          enabled: false\n        live_lottery:\n          enabled: false\n        login:\n          enabled: false\n        manga:\n          enabled: false\n        manga_privilege:\n          enabled: false\n        silver2_coin:\n          enabled: false\n        test:\n          enabled: false\n        try_fix:\n          enabled: false\n        unfollow_batched:\n          enabled: false\n        vip_privilege:\n          enabled: false\n        vip_big_point:\n          enabled: false\n\n  - id: \"standard\"\n    name: \"标准日常满收益模式 (推荐)\"\n    description: \"开启每日签到、自动投币、大会员大积分与漫画权益领取，最大化每日经验与收益\"\n    default: true\n    task_presets:\n        charge:\n          enabled: true\n        daily:\n          enabled: true\n        live_fans_medal:\n          enabled: false\n        live_lottery:\n          enabled: false\n        login:\n          enabled: false\n        manga:\n          enabled: true\n        manga_privilege:\n          enabled: true\n        silver2_coin:\n          enabled: true\n        test:\n          enabled: false\n        try_fix:\n          enabled: false\n        unfollow_batched:\n          enabled: false\n        vip_privilege:\n          enabled: true\n        vip_big_point:\n          enabled: false\n\n  - id: \"hardcore\"\n    name: \"全天候极客全能模式\"\n    description: \"开启全部自动化功能，包括每 15 分钟一次的高频直播间天选时刻自动巡检抽奖\"\n    task_presets:\n        charge:\n          enabled: true\n        daily:\n          enabled: true\n        live_fans_medal:\n          enabled: true\n        live_lottery:\n          enabled: true\n          cron: \"0 */20 * * * *\"\n        login:\n          enabled: false\n        manga:\n          enabled: true\n        manga_privilege:\n          enabled: true\n        silver2_coin:\n          enabled: true\n        test:\n          enabled: false\n        try_fix:\n          enabled: false\n        unfollow_batched:\n          enabled: true\n        vip_privilege:\n          enabled: true\n        vip_big_point:\n          enabled: true\n",
       "manifest_url": "https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/BiliBiliToolPro/app.yaml",
-      "updated_at": "2026-09-17T00:42:19Z"
-    },
-    {
-      "spec_version": "v1",
-      "id": "ark",
-      "name": "Ark 班轮货运管理终端",
-      "version": "1.0.0",
-      "author": "duorameng",
-      "category": "系统工具",
-      "last_commit": "2026-09-16T00:00:00+08:00",
-      "description": "基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。",
-      "icon": "https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png",
-      "homepage": "https://github.com/duorameng/ark",
-      "tasks": [
-        {
-          "id": "ark_check",
-          "name": "环境与密钥就绪自检",
-          "source": "main",
-          "command": "{app_dir}/bin/ark check",
-          "default_cron": "0 0 8 * * *",
-          "enabled": true,
-          "remark": "自检权限、配置、密钥加密与网络连通闭环"
-        },
-        {
-          "id": "ark_board",
-          "name": "每日增量快照打包登船交付",
-          "source": "main",
-          "command": "{app_dir}/bin/ark board --day --auto-scan",
-          "default_cron": "0 0 2 * * *",
-          "enabled": true,
-          "remark": "全自动探测变更，按天打标并分层增量推送至云端注册表"
-        },
-        {
-          "id": "ark_dry",
-          "name": "模拟演练与全量校验 (Dry Run)",
-          "source": "main",
-          "command": "{app_dir}/bin/ark dry",
-          "default_cron": "0 0 12 * * *",
-          "enabled": false,
-          "remark": "模拟分层打包与冷热度排序验证，不产生真实网络推流"
-        }
-      ],
-      "tasks_count": 3,
-      "env_schema": [
-        {
-          "key": "ARK_BACKUP_DIR",
-          "label": "工作区源路径 (ARK_BACKUP_DIR)",
-          "type": "normal",
-          "tag": "{tag}",
-          "required": true,
-          "description": "需要备份与同步的工作区根目录路径（如 /root/workspace）",
-          "placeholder": "/root/workspace"
-        },
-        {
-          "key": "ARK_SEAL_KEY",
-          "label": "AES-256 封条加密口令",
-          "type": "secret",
-          "tag": "{tag}",
-          "required": false,
-          "description": "端到端 AES-256-CBC 封条自定义加密口令",
-          "placeholder": "YourSecretKey"
-        },
-        {
-          "key": "ARK_REGISTRY_TYPE",
-          "label": "目标注册表通道 (ali/gh/both)",
-          "type": "normal",
-          "tag": "{tag}",
-          "required": false,
-          "default": "gh",
-          "description": "远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)",
-          "placeholder": "gh"
-        },
-        {
-          "key": "ARK_REPOSITORY",
-          "label": "目标镜像仓库路径",
-          "type": "normal",
-          "tag": "{tag}",
-          "required": false,
-          "description": "目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）",
-          "placeholder": "ghcr.io/duorameng/ark"
-        }
-      ],
-      "scenarios": [
-        {
-          "id": "standard",
-          "name": "标准自动打包备份模式",
-          "description": "启用每日定时快照登船交付与环境健康度自检",
-          "default": true,
-          "task_presets": {
-            "ark_check": {
-              "enabled": true
-            },
-            "ark_board": {
-              "enabled": true
-            },
-            "ark_dry": {
-              "enabled": false
-            }
-          }
-        },
-        {
-          "id": "minimal",
-          "name": "仅环境自检模式",
-          "description": "仅保留基础状态检测，挂起定时打包",
-          "default": false,
-          "task_presets": {
-            "ark_check": {
-              "enabled": true
-            },
-            "ark_board": {
-              "enabled": false
-            },
-            "ark_dry": {
-              "enabled": false
-            }
-          }
-        }
-      ],
-      "scenarios_count": 2,
-      "app_dir": "ark",
-      "manifest_path": "apps/ark/app.yaml",
-      "manifest_raw": "spec_version: v1\nid: ark\nname: Ark 班轮货运管理终端\nversion: 1.0.0\nauthor: duorameng\ncategory: 系统工具\nlast_commit: '2026-09-16T00:00:00+08:00'\ntemplate:\n- tag: Ark\n- mise_languages: go@1.22.5\ndescription: 基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。\nicon: https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png\nhomepage: https://github.com/duorameng/ark\nsources:\n- id: main\n  source_type: git\n  source_url: https://github.com/duorameng/ark.git\n  branch: main\n  path: ''\n  single_file: false\n  proxy: ghproxy\n  target_path: main\nsetup:\n  check: node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\"\n  install: |-\n    echo \">> 正在从 GitHub Release 下载 Ark 预编译二进制程序...\"\n    node -e \"\n      const fs = require('fs');\n      const path = require('path');\n      const binDir = path.join('{app_dir}', 'bin');\n      if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });\n\n      const isWin = process.platform === 'win32';\n      const targetName = isWin ? 'ark.exe' : 'ark';\n      const targetPath = path.join(binDir, targetName);\n      const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');\n      const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;\n      const mirrors = [\n        'https://ghproxy.net/' + rawUrl,\n        'https://mirror.ghproxy.com/' + rawUrl,\n        'https://ghfast.top/' + rawUrl,\n        'https://ghproxy.com/' + rawUrl,\n        rawUrl\n      ];\n\n      const tryDownload = (index) => {\n        if (index >= mirrors.length) {\n          console.error('>> [错误] 所有加速源均下载失败，请检查网络连通性');\n          process.exit(1);\n        }\n        const currentUrl = mirrors[index];\n        const fetchUrl = (url) => {\n          const client = url.startsWith('https') ? require('https') : require('http');\n          const file = fs.createWriteStream(targetPath);\n          const req = client.get(url, (res) => {\n            if (res.statusCode === 301 || res.statusCode === 302) {\n              fetchUrl(res.headers.location);\n            } else if (res.statusCode === 200) {\n              res.pipe(file);\n              file.on('finish', () => {\n                file.close();\n                if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }\n                console.log('>> Ark Release 二进制下载就绪:', targetName);\n              });\n            } else {\n              file.close();\n              try { fs.unlinkSync(targetPath); } catch(e){}\n              tryDownload(index + 1);\n            }\n          });\n          req.on('error', () => {\n            file.close();\n            try { fs.unlinkSync(targetPath); } catch(e){}\n            tryDownload(index + 1);\n          });\n        };\n        fetchUrl(currentUrl);\n      };\n      tryDownload(0);\n    \"\n    echo \">> Ark 部署完成！\"\n  uninstall: node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\"\nenv_schema:\n- key: ARK_BACKUP_DIR\n  label: 工作区源路径 (ARK_BACKUP_DIR)\n  type: normal\n  tag: '{tag}'\n  required: true\n  description: 需要备份与同步的工作区根目录路径（如 /root/workspace）\n  placeholder: /root/workspace\n- key: ARK_SEAL_KEY\n  label: AES-256 封条加密口令\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: 端到端 AES-256-CBC 封条自定义加密口令\n  placeholder: YourSecretKey\n- key: ARK_REGISTRY_TYPE\n  label: 目标注册表通道 (ali/gh/both)\n  type: normal\n  tag: '{tag}'\n  required: false\n  default: gh\n  description: '远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)'\n  placeholder: gh\n- key: ARK_REPOSITORY\n  label: 目标镜像仓库路径\n  type: normal\n  tag: '{tag}'\n  required: false\n  description: 目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）\n  placeholder: ghcr.io/duorameng/ark\ntasks:\n- id: ark_check\n  name: 环境与密钥就绪自检\n  source: main\n  command: '{app_dir}/bin/ark check'\n  default_cron: 0 0 8 * * *\n  enabled: true\n  remark: 自检权限、配置、密钥加密与网络连通闭环\n- id: ark_board\n  name: 每日增量快照打包登船交付\n  source: main\n  command: '{app_dir}/bin/ark board --day --auto-scan'\n  default_cron: 0 0 2 * * *\n  enabled: true\n  remark: 全自动探测变更，按天打标并分层增量推送至云端注册表\n- id: ark_dry\n  name: 模拟演练与全量校验 (Dry Run)\n  source: main\n  command: '{app_dir}/bin/ark dry'\n  default_cron: 0 0 12 * * *\n  enabled: false\n  remark: 模拟分层打包与冷热度排序验证，不产生真实网络推流\nscenarios:\n- id: standard\n  name: 标准自动打包备份模式\n  description: 启用每日定时快照登船交付与环境健康度自检\n  default: true\n  task_presets:\n    ark_check:\n      enabled: true\n    ark_board:\n      enabled: true\n    ark_dry:\n      enabled: false\n- id: minimal\n  name: 仅环境自检模式\n  description: 仅保留基础状态检测，挂起定时打包\n  default: false\n  task_presets:\n    ark_check:\n      enabled: true\n    ark_board:\n      enabled: false\n    ark_dry:\n      enabled: false\n",
-      "manifest_url": "https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/ark/app.yaml",
-      "updated_at": "2026-09-17T00:42:19Z"
+      "updated_at": "2026-09-17T00:55:03Z"
     },
     {
       "spec_version": "v1",
@@ -531,22 +531,6 @@
           "command": "mise exec {mise_languages} -- node main/jd_AutoEval.js",
           "default_cron": "0 8 * * *",
           "remark": "JDPro 动态任务：带图评价晒单 (jd_AutoEval.js)"
-        },
-        {
-          "id": "jd_CheckCK",
-          "name": "CK检测",
-          "source": "main",
-          "command": "mise exec {mise_languages} -- node main/jd_CheckCK.js",
-          "default_cron": "0 8 * * *",
-          "remark": "JDPro 动态任务：CK检测 (jd_CheckCK.js)"
-        },
-        {
-          "id": "jd_OnceApply",
-          "name": "一键价保",
-          "source": "main",
-          "command": "mise exec {mise_languages} -- node main/jd_OnceApply.js",
-          "default_cron": "0 8 * * *",
-          "remark": "JDPro 动态任务：一键价保 (jd_OnceApply.js)"
         },
         {
           "id": "jd_bean_change",
@@ -573,6 +557,14 @@
           "remark": "JDPro 动态任务：豆子7天统计 (jd_beans_7days.py)"
         },
         {
+          "id": "jd_CheckCK",
+          "name": "CK检测",
+          "source": "main",
+          "command": "mise exec {mise_languages} -- node main/jd_CheckCK.js",
+          "default_cron": "0 8 * * *",
+          "remark": "JDPro 动态任务：CK检测 (jd_CheckCK.js)"
+        },
+        {
           "id": "jd_code2url",
           "name": "口令转链接",
           "source": "main",
@@ -581,20 +573,20 @@
           "remark": "JDPro 动态任务：口令转链接 (jd_code2url.js)"
         },
         {
-          "id": "jd_delLjq",
-          "name": "批量删垃圾券",
-          "source": "main",
-          "command": "mise exec {mise_languages} -- node main/jd_delLjq.js",
-          "default_cron": "0 8 * * *",
-          "remark": "JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)"
-        },
-        {
           "id": "jd_deliverySign_sign",
           "name": "天天领豆",
           "source": "main",
           "command": "mise exec {mise_languages} -- node main/jd_deliverySign_sign.js",
           "default_cron": "0 8 * * *",
           "remark": "JDPro 动态任务：天天领豆 (jd_deliverySign_sign.js)"
+        },
+        {
+          "id": "jd_delLjq",
+          "name": "批量删垃圾券",
+          "source": "main",
+          "command": "mise exec {mise_languages} -- node main/jd_delLjq.js",
+          "default_cron": "0 8 * * *",
+          "remark": "JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)"
         },
         {
           "id": "jd_dplhbshop",
@@ -755,6 +747,14 @@
           "command": "mise exec {mise_languages} -- node main/jd_newfarmlottery.js",
           "default_cron": "0 8 * * *",
           "remark": "JDPro 动态任务：新农场幸运转盘 (jd_newfarmlottery.js)"
+        },
+        {
+          "id": "jd_OnceApply",
+          "name": "一键价保",
+          "source": "main",
+          "command": "mise exec {mise_languages} -- node main/jd_OnceApply.js",
+          "default_cron": "0 8 * * *",
+          "remark": "JDPro 动态任务：一键价保 (jd_OnceApply.js)"
         },
         {
           "id": "jd_pkabeans",
@@ -1003,12 +1003,6 @@
             "jd_AutoEval": {
               "enabled": false
             },
-            "jd_CheckCK": {
-              "enabled": true
-            },
-            "jd_OnceApply": {
-              "enabled": false
-            },
             "jd_bean_change": {
               "enabled": false
             },
@@ -1018,13 +1012,16 @@
             "jd_beans_7days": {
               "enabled": false
             },
+            "jd_CheckCK": {
+              "enabled": true
+            },
             "jd_code2url": {
               "enabled": false
             },
-            "jd_delLjq": {
+            "jd_deliverySign_sign": {
               "enabled": false
             },
-            "jd_deliverySign_sign": {
+            "jd_delLjq": {
               "enabled": false
             },
             "jd_dplhbshop": {
@@ -1086,6 +1083,9 @@
             },
             "jd_newfarmlottery": {
               "enabled": true
+            },
+            "jd_OnceApply": {
+              "enabled": false
             },
             "jd_pkabeans": {
               "enabled": false
@@ -1166,12 +1166,6 @@
             "jd_AutoEval": {
               "enabled": false
             },
-            "jd_CheckCK": {
-              "enabled": true
-            },
-            "jd_OnceApply": {
-              "enabled": false
-            },
             "jd_bean_change": {
               "enabled": true
             },
@@ -1181,13 +1175,16 @@
             "jd_beans_7days": {
               "enabled": false
             },
+            "jd_CheckCK": {
+              "enabled": true
+            },
             "jd_code2url": {
               "enabled": false
             },
-            "jd_delLjq": {
+            "jd_deliverySign_sign": {
               "enabled": false
             },
-            "jd_deliverySign_sign": {
+            "jd_delLjq": {
               "enabled": false
             },
             "jd_dplhbshop": {
@@ -1248,6 +1245,9 @@
               "enabled": false
             },
             "jd_newfarmlottery": {
+              "enabled": false
+            },
+            "jd_OnceApply": {
               "enabled": false
             },
             "jd_pkabeans": {
@@ -1329,12 +1329,6 @@
             "jd_AutoEval": {
               "enabled": true
             },
-            "jd_CheckCK": {
-              "enabled": true
-            },
-            "jd_OnceApply": {
-              "enabled": true
-            },
             "jd_bean_change": {
               "enabled": true
             },
@@ -1344,13 +1338,16 @@
             "jd_beans_7days": {
               "enabled": true
             },
+            "jd_CheckCK": {
+              "enabled": true
+            },
             "jd_code2url": {
               "enabled": true
             },
-            "jd_delLjq": {
+            "jd_deliverySign_sign": {
               "enabled": true
             },
-            "jd_deliverySign_sign": {
+            "jd_delLjq": {
               "enabled": true
             },
             "jd_dplhbshop": {
@@ -1411,6 +1408,9 @@
               "enabled": true
             },
             "jd_newfarmlottery": {
+              "enabled": true
+            },
+            "jd_OnceApply": {
               "enabled": true
             },
             "jd_pkabeans": {
@@ -1488,9 +1488,9 @@
       "scenarios_count": 3,
       "app_dir": "jdpro",
       "manifest_path": "apps/jdpro/app.yaml",
-      "manifest_raw": "spec_version: v1\nid: jdpro\nname: 京东全功能自动化助手 (JDPro)\nversion: 1.0.0\nauthor: 6dylan6\ncategory: 福利签到\nlast_commit: '2026-09-16T09:22:12+08:00'\ntemplate:\n- tag: JDPro\n- mise_languages: node@23.11.1\ndescription: 基于 Node.js 的京东自动化全功能任务集合，动态包含 52 个福利任务，支持资产变动通知、东东农场、汪汪庄园、店铺签到、签到提现等\nicon: https://img10.360buyimg.com/img/jfs/t1/158580/38/20042/13936/6090f4e3E06b86cf0/64dd78b273d6b05e.png\nhomepage: https://github.com/6dylan6/jdpro\nsources:\n- id: main\n  source_type: git\n  source_url: https://github.com/6dylan6/jdpro.git\n  branch: main\n  path: ''\n  single_file: false\n  proxy: ghproxy\n  target_path: main\nsetup:\n  check: mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v23'))\n    process.exit(1)\"\n  install: |-\n    mise install {mise_languages}\n    echo \">> 正在为 JDPro 设置 registry 镜像并清理旧 lockfile...\"\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm config set registry https://registry.npmmirror.com/\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- node -e \"try{require('fs').unlinkSync('package-lock.json')}catch(e){}\"\n    echo \">> 正在安装 JDPro 基础 Node.js 依赖...\"\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install got@11.8.6 ds@2.0.2 png-js@1.0.0 date-fns@3.6.0 axios@1.7.4 crypto-js@4.2.0 request@2.88.2 jsdom@24.1.1 moment@2.30.1 cheerio@1.0.0 https-proxy-agent@7.0.5 tough-cookie tunnel dotenv qrcode-terminal tslib typescript --legacy-peer-deps --no-audit --no-fund --omit=dev\n    echo \">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)...\"\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- node jd_indeps.js\n    echo \">> JDPro 依赖就绪！\"\n  uninstall: mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}\"\nenv_schema:\n- key: JD_COOKIE\n  label: 京东账号凭证 (Cookie)\n  type: secret\n  tag: '{tag}'\n  required: true\n  description: 京东账号 Pt_Key 与 Pt_Pin 凭证，格式为 pt_key=xxx;pt_pin=yyy;（多账号可用 & 分隔）\n  placeholder: pt_key=AAJxxx; pt_pin=jd_123456;\n- key: PUSH_KEY\n  label: Server酱 PUSH_KEY\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: Server酱微信推送 Key，用于接收资产变动与通知\n- key: BARK_PUSH\n  label: Bark 推送地址\n  type: string\n  tag: '{tag}'\n  required: false\n  description: iOS Bark 推送服务地址/Key\n- key: QYWX_AM\n  label: 企业微信应用推送\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: 企业微信应用消息推送参数\n- key: TG_BOT_TOKEN\n  label: Telegram Bot Token\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: Telegram 机器人 Token\n- key: TG_USER_ID\n  label: Telegram User ID\n  type: string\n  tag: '{tag}'\n  required: false\n  description: Telegram 用户 ID\ntasks:\n- id: jd_AutoEval\n  name: 带图评价晒单\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_AutoEval.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：带图评价晒单 (jd_AutoEval.js)\n- id: jd_CheckCK\n  name: CK检测\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_CheckCK.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：CK检测 (jd_CheckCK.js)\n- id: jd_OnceApply\n  name: 一键价保\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_OnceApply.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：一键价保 (jd_OnceApply.js)\n- id: jd_bean_change\n  name: 京东资产统计\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_bean_change.js\n  default_cron: 0 28 8,21 * * *\n  remark: JDPro 动态任务：京东资产统计 (jd_bean_change.js)\n- id: jd_bean_info\n  name: 京豆详情统计\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_bean_info.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：京豆详情统计 (jd_bean_info.js)\n- id: jd_beans_7days\n  name: 豆子7天统计\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_beans_7days.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：豆子7天统计 (jd_beans_7days.py)\n- id: jd_code2url\n  name: 口令转链接\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_code2url.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：口令转链接 (jd_code2url.js)\n- id: jd_delLjq\n  name: 批量删垃圾券\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_delLjq.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)\n- id: jd_deliverySign_sign\n  name: 天天领豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_deliverySign_sign.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：天天领豆 (jd_deliverySign_sign.js)\n- id: jd_dplhbshop\n  name: 大牌浏览店铺\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dplhbshop.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：大牌浏览店铺 (jd_dplhbshop.js)\n- id: jd_dpqd_main\n  name: 批量店铺签到（活动查询）\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dpqd_main.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：批量店铺签到（活动查询） (jd_dpqd_main.js)\n- id: jd_dpqd_sign\n  name: 批量店铺签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dpqd_sign.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：批量店铺签到 (jd_dpqd_sign.js)\n- id: jd_dpqd_single\n  name: 单个店铺签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dpqd_single.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：单个店铺签到 (jd_dpqd_single.js)\n- id: jd_dwapp\n  name: 积分换话费\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dwapp.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：积分换话费 (jd_dwapp.js)\n- id: jd_farmnew_ck_help\n  name: 新农场CK顺序助力\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_farmnew_ck_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场CK顺序助力 (jd_farmnew_ck_help.js)\n- id: jd_farmnew_code_help\n  name: 新农场助力码助力\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_farmnew_code_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场助力码助力 (jd_farmnew_code_help.js)\n- id: jd_fish_help\n  name: 金融捕鱼助力\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_fish_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：金融捕鱼助力 (jd_fish_help.js)\n- id: jd_fruit_new\n  name: 新农场任务\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_fruit_new.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场任务 (jd_fruit_new.js)\n- id: jd_hdyxzd\n  name: 互动游戏赚豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_hdyxzd.js\n  default_cron: 0 6 8,16 * * *\n  remark: JDPro 动态任务：互动游戏赚豆 (jd_hdyxzd.js)\n- id: jd_hssign\n  name: hs每日签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_hssign.js\n  default_cron: 0 15 8 * * *\n  remark: JDPro 动态任务：hs每日签到 (jd_hssign.js)\n- id: jd_ifdraw\n  name: IF任务抽奖合集\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_ifdraw.js\n  default_cron: 0 33 7,15 * * *\n  remark: JDPro 动态任务：IF任务抽奖合集 (jd_ifdraw.js)\n- id: jd_jingpai\n  name: 竞拍竞猜\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_jingpai.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：竞拍竞猜 (jd_jingpai.js)\n- id: jd_joypark_leave\n  name: 汪汪庄园离线收金币\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_joypark_leave.js\n  default_cron: 0 1 1 29 2 *\n  remark: JDPro 动态任务：汪汪庄园离线收金币 (jd_joypark_leave.js)\n- id: jd_joypark_task\n  name: 汪汪庄园任务\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_joypark_task.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：汪汪庄园任务 (jd_joypark_task.js)\n- id: jd_jrddzjd\n  name: 天天赚京豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_jrddzjd.js\n  default_cron: 0 50 8,16 * * *\n  remark: JDPro 动态任务：天天赚京豆 (jd_jrddzjd.js)\n- id: jd_jrttlqy\n  name: 天天领权益\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_jrttlqy.js\n  default_cron: 0 23 9,13 * * *\n  remark: JDPro 动态任务：天天领权益 (jd_jrttlqy.js)\n- id: jd_lmdraw\n  name: LM任务抽奖合集\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_lmdraw.js\n  default_cron: 0 29 2 29 2 *\n  remark: JDPro 动态任务：LM任务抽奖合集 (jd_lmdraw.js)\n- id: jd_luckyDraw\n  name: 幸运抽奖\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_luckyDraw.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：幸运抽奖 (jd_luckyDraw.js)\n- id: jd_newfarmlottery\n  name: 新农场幸运转盘\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_newfarmlottery.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场幸运转盘 (jd_newfarmlottery.js)\n- id: jd_pkabeans\n  name: 礼品卡领豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_pkabeans.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：礼品卡领豆 (jd_pkabeans.js)\n- id: jd_plantBean\n  name: 种豆得豆任务\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_plantBean.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：种豆得豆任务 (jd_plantBean.js)\n- id: jd_plantBean_help\n  name: 种豆得豆互助\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_plantBean_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：种豆得豆互助 (jd_plantBean_help.js)\n- id: jd_proxy_check\n  name: 代理检测\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_proxy_check.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：代理检测 (jd_proxy_check.js)\n- id: jd_qy_sign\n  name: 权益中心签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_qy_sign.js\n  default_cron: 0 21 10 * * *\n  remark: JDPro 动态任务：权益中心签到 (jd_qy_sign.js)\n- id: jd_rankVote\n  name: 排行榜投票\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_rankVote.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：排行榜投票 (jd_rankVote.js)\n- id: jd_rmvcart\n  name: 清空购物车\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_rmvcart.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：清空购物车 (jd_rmvcart.js)\n- id: jd_signbeanact_\n  name: 天天领豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_signbeanact_.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：天天领豆 (jd_signbeanact_.js)\n- id: jd_sldraw\n  name: SL任务抽奖合集\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_sldraw.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：SL任务抽奖合集 (jd_sldraw.js)\n- id: jd_taskop\n  name: 重复任务优化\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_taskop.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：重复任务优化 (jd_taskop.py)\n- id: jd_ttgd\n  name: 天天刮京豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_ttgd.js\n  default_cron: 0 21 4,15 * * *\n  remark: JDPro 动态任务：天天刮京豆 (jd_ttgd.js)\n- id: jd_unsubscribe\n  name: 批量取关店铺和商品\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_unsubscribe.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：批量取关店铺和商品 (jd_unsubscribe.js)\n- id: jd_vu50\n  name: V你50超市卡\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_vu50.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：V你50超市卡 (jd_vu50.js)\n- id: jd_water_new\n  name: 新农场浇水\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_water_new.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场浇水 (jd_water_new.js)\n- id: jd_wduoyu\n  name: 多投多赚\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_wduoyu.js\n  default_cron: 0 29 2 29 2 *\n  remark: JDPro 动态任务：多投多赚 (jd_wduoyu.js)\n- id: jd_weGameLottery\n  name: 互动游戏签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_weGameLottery.js\n  default_cron: 0 12 7,15 * * *\n  remark: JDPro 动态任务：互动游戏签到 (jd_weGameLottery.js)\n- id: jd_wsck\n  name: wskey本地转换\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_wsck.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：wskey本地转换 (jd_wsck.py)\n- id: jd_wskey\n  name: wskey转换\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_wskey.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：wskey转换 (jd_wskey.py)\n- id: jd_wwmanor_merge\n  name: 汪汪庄园合成\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_wwmanor_merge.js\n  default_cron: 0 2 2 29 2 *\n  remark: JDPro 动态任务：汪汪庄园合成 (jd_wwmanor_merge.js)\n- id: jd_wxtoken_m\n  name: 快速缓存token\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_wxtoken_m.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：快速缓存token (jd_wxtoken_m.js)\n- id: jd_xsjx\n  name: 限时京喜\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_xsjx.js\n  default_cron: 0 38 7,19 * * *\n  remark: JDPro 动态任务：限时京喜 (jd_xsjx.js)\n- id: jd_yssign\n  name: ys每日签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_yssign.js\n  default_cron: 0 20 9 * * *\n  remark: JDPro 动态任务：ys每日签到 (jd_yssign.js)\n- id: jd_zjindan\n  name: 天天砸金蛋\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_zjindan.js\n  default_cron: 0 10 9,15 * * *\n  remark: JDPro 动态任务：天天砸金蛋 (jd_zjindan.js)\nscenarios:\n- id: standard\n  name: 标准运行模式\n  default: true\n  description: 智能精选日常资产变动通知、Cookie检测、农场、种豆与签到任务\n  task_presets:\n    jd_AutoEval:\n      enabled: false\n    jd_CheckCK:\n      enabled: true\n    jd_OnceApply:\n      enabled: false\n    jd_bean_change:\n      enabled: false\n    jd_bean_info:\n      enabled: false\n    jd_beans_7days:\n      enabled: false\n    jd_code2url:\n      enabled: false\n    jd_delLjq:\n      enabled: false\n    jd_deliverySign_sign:\n      enabled: false\n    jd_dplhbshop:\n      enabled: true\n    jd_dpqd_main:\n      enabled: true\n    jd_dpqd_sign:\n      enabled: true\n    jd_dpqd_single:\n      enabled: true\n    jd_dwapp:\n      enabled: false\n    jd_farmnew_ck_help:\n      enabled: true\n    jd_farmnew_code_help:\n      enabled: true\n    jd_fish_help:\n      enabled: false\n    jd_fruit_new:\n      enabled: true\n    jd_hdyxzd:\n      enabled: false\n    jd_hssign:\n      enabled: true\n    jd_ifdraw:\n      enabled: false\n    jd_jingpai:\n      enabled: false\n    jd_joypark_leave:\n      enabled: true\n    jd_joypark_task:\n      enabled: true\n    jd_jrddzjd:\n      enabled: false\n    jd_jrttlqy:\n      enabled: false\n    jd_lmdraw:\n      enabled: false\n    jd_luckyDraw:\n      enabled: false\n    jd_newfarmlottery:\n      enabled: true\n    jd_pkabeans:\n      enabled: false\n    jd_plantBean:\n      enabled: true\n    jd_plantBean_help:\n      enabled: true\n    jd_proxy_check:\n      enabled: false\n    jd_qy_sign:\n      enabled: true\n    jd_rankVote:\n      enabled: false\n    jd_rmvcart:\n      enabled: false\n    jd_signbeanact_:\n      enabled: false\n    jd_sldraw:\n      enabled: false\n    jd_taskop:\n      enabled: false\n    jd_ttgd:\n      enabled: false\n    jd_unsubscribe:\n      enabled: true\n    jd_vu50:\n      enabled: false\n    jd_water_new:\n      enabled: true\n    jd_wduoyu:\n      enabled: false\n    jd_weGameLottery:\n      enabled: true\n    jd_wsck:\n      enabled: false\n    jd_wskey:\n      enabled: false\n    jd_wwmanor_merge:\n      enabled: true\n    jd_wxtoken_m:\n      enabled: false\n    jd_xsjx:\n      enabled: false\n    jd_yssign:\n      enabled: true\n    jd_zjindan:\n      enabled: false\n- id: minimal\n  name: 极简节能模式\n  description: 仅保留 Cookie 状态检测与资产变动通知，省电低性能损耗\n  task_presets:\n    jd_AutoEval:\n      enabled: false\n    jd_CheckCK:\n      enabled: true\n    jd_OnceApply:\n      enabled: false\n    jd_bean_change:\n      enabled: true\n    jd_bean_info:\n      enabled: false\n    jd_beans_7days:\n      enabled: false\n    jd_code2url:\n      enabled: false\n    jd_delLjq:\n      enabled: false\n    jd_deliverySign_sign:\n      enabled: false\n    jd_dplhbshop:\n      enabled: false\n    jd_dpqd_main:\n      enabled: false\n    jd_dpqd_sign:\n      enabled: false\n    jd_dpqd_single:\n      enabled: false\n    jd_dwapp:\n      enabled: false\n    jd_farmnew_ck_help:\n      enabled: false\n    jd_farmnew_code_help:\n      enabled: false\n    jd_fish_help:\n      enabled: false\n    jd_fruit_new:\n      enabled: false\n    jd_hdyxzd:\n      enabled: false\n    jd_hssign:\n      enabled: false\n    jd_ifdraw:\n      enabled: false\n    jd_jingpai:\n      enabled: false\n    jd_joypark_leave:\n      enabled: false\n    jd_joypark_task:\n      enabled: false\n    jd_jrddzjd:\n      enabled: false\n    jd_jrttlqy:\n      enabled: false\n    jd_lmdraw:\n      enabled: false\n    jd_luckyDraw:\n      enabled: false\n    jd_newfarmlottery:\n      enabled: false\n    jd_pkabeans:\n      enabled: false\n    jd_plantBean:\n      enabled: false\n    jd_plantBean_help:\n      enabled: false\n    jd_proxy_check:\n      enabled: false\n    jd_qy_sign:\n      enabled: false\n    jd_rankVote:\n      enabled: false\n    jd_rmvcart:\n      enabled: false\n    jd_signbeanact_:\n      enabled: false\n    jd_sldraw:\n      enabled: false\n    jd_taskop:\n      enabled: false\n    jd_ttgd:\n      enabled: false\n    jd_unsubscribe:\n      enabled: false\n    jd_vu50:\n      enabled: false\n    jd_water_new:\n      enabled: false\n    jd_wduoyu:\n      enabled: false\n    jd_weGameLottery:\n      enabled: false\n    jd_wsck:\n      enabled: false\n    jd_wskey:\n      enabled: false\n    jd_wwmanor_merge:\n      enabled: false\n    jd_wxtoken_m:\n      enabled: false\n    jd_xsjx:\n      enabled: false\n    jd_yssign:\n      enabled: false\n    jd_zjindan:\n      enabled: false\n- id: full\n  name: 全功能完整模式\n  description: 自动全量开启上游解析到的全部任务\n  task_presets:\n    jd_AutoEval:\n      enabled: true\n    jd_CheckCK:\n      enabled: true\n    jd_OnceApply:\n      enabled: true\n    jd_bean_change:\n      enabled: true\n    jd_bean_info:\n      enabled: true\n    jd_beans_7days:\n      enabled: true\n    jd_code2url:\n      enabled: true\n    jd_delLjq:\n      enabled: true\n    jd_deliverySign_sign:\n      enabled: true\n    jd_dplhbshop:\n      enabled: true\n    jd_dpqd_main:\n      enabled: true\n    jd_dpqd_sign:\n      enabled: true\n    jd_dpqd_single:\n      enabled: true\n    jd_dwapp:\n      enabled: true\n    jd_farmnew_ck_help:\n      enabled: true\n    jd_farmnew_code_help:\n      enabled: true\n    jd_fish_help:\n      enabled: true\n    jd_fruit_new:\n      enabled: true\n    jd_hdyxzd:\n      enabled: true\n    jd_hssign:\n      enabled: true\n    jd_ifdraw:\n      enabled: true\n    jd_jingpai:\n      enabled: true\n    jd_joypark_leave:\n      enabled: true\n    jd_joypark_task:\n      enabled: true\n    jd_jrddzjd:\n      enabled: true\n    jd_jrttlqy:\n      enabled: true\n    jd_lmdraw:\n      enabled: true\n    jd_luckyDraw:\n      enabled: true\n    jd_newfarmlottery:\n      enabled: true\n    jd_pkabeans:\n      enabled: true\n    jd_plantBean:\n      enabled: true\n    jd_plantBean_help:\n      enabled: true\n    jd_proxy_check:\n      enabled: true\n    jd_qy_sign:\n      enabled: true\n    jd_rankVote:\n      enabled: true\n    jd_rmvcart:\n      enabled: true\n    jd_signbeanact_:\n      enabled: true\n    jd_sldraw:\n      enabled: true\n    jd_taskop:\n      enabled: true\n    jd_ttgd:\n      enabled: true\n    jd_unsubscribe:\n      enabled: true\n    jd_vu50:\n      enabled: true\n    jd_water_new:\n      enabled: true\n    jd_wduoyu:\n      enabled: true\n    jd_weGameLottery:\n      enabled: true\n    jd_wsck:\n      enabled: true\n    jd_wskey:\n      enabled: true\n    jd_wwmanor_merge:\n      enabled: true\n    jd_wxtoken_m:\n      enabled: true\n    jd_xsjx:\n      enabled: true\n    jd_yssign:\n      enabled: true\n    jd_zjindan:\n      enabled: true\n",
+      "manifest_raw": "spec_version: v1\nid: jdpro\nname: 京东全功能自动化助手 (JDPro)\nversion: 1.0.0\nauthor: 6dylan6\ncategory: 福利签到\nlast_commit: '2026-09-16T09:22:12+08:00'\ntemplate:\n- tag: JDPro\n- mise_languages: node@23.11.1\ndescription: 基于 Node.js 的京东自动化全功能任务集合，动态包含 52 个福利任务，支持资产变动通知、东东农场、汪汪庄园、店铺签到、签到提现等\nicon: https://img10.360buyimg.com/img/jfs/t1/158580/38/20042/13936/6090f4e3E06b86cf0/64dd78b273d6b05e.png\nhomepage: https://github.com/6dylan6/jdpro\nsources:\n- id: main\n  source_type: git\n  source_url: https://github.com/6dylan6/jdpro.git\n  branch: main\n  path: ''\n  single_file: false\n  proxy: ghproxy\n  target_path: main\nsetup:\n  check: mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v23'))\n    process.exit(1)\"\n  install: |-\n    mise install {mise_languages}\n    echo \">> 正在为 JDPro 设置 registry 镜像并清理旧 lockfile...\"\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm config set registry https://registry.npmmirror.com/\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- node -e \"try{require('fs').unlinkSync('package-lock.json')}catch(e){}\"\n    echo \">> 正在安装 JDPro 基础 Node.js 依赖...\"\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install got@11.8.6 ds@2.0.2 png-js@1.0.0 date-fns@3.6.0 axios@1.7.4 crypto-js@4.2.0 request@2.88.2 jsdom@24.1.1 moment@2.30.1 cheerio@1.0.0 https-proxy-agent@7.0.5 tough-cookie tunnel dotenv qrcode-terminal tslib typescript --legacy-peer-deps --no-audit --no-fund --omit=dev\n    echo \">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)...\"\n    cd \"{app_dir}/main\" && mise exec {mise_languages} -- node jd_indeps.js\n    echo \">> JDPro 依赖就绪！\"\n  uninstall: mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}\"\nenv_schema:\n- key: JD_COOKIE\n  label: 京东账号凭证 (Cookie)\n  type: secret\n  tag: '{tag}'\n  required: true\n  description: 京东账号 Pt_Key 与 Pt_Pin 凭证，格式为 pt_key=xxx;pt_pin=yyy;（多账号可用 & 分隔）\n  placeholder: pt_key=AAJxxx; pt_pin=jd_123456;\n- key: PUSH_KEY\n  label: Server酱 PUSH_KEY\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: Server酱微信推送 Key，用于接收资产变动与通知\n- key: BARK_PUSH\n  label: Bark 推送地址\n  type: string\n  tag: '{tag}'\n  required: false\n  description: iOS Bark 推送服务地址/Key\n- key: QYWX_AM\n  label: 企业微信应用推送\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: 企业微信应用消息推送参数\n- key: TG_BOT_TOKEN\n  label: Telegram Bot Token\n  type: secret\n  tag: '{tag}'\n  required: false\n  description: Telegram 机器人 Token\n- key: TG_USER_ID\n  label: Telegram User ID\n  type: string\n  tag: '{tag}'\n  required: false\n  description: Telegram 用户 ID\ntasks:\n- id: jd_AutoEval\n  name: 带图评价晒单\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_AutoEval.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：带图评价晒单 (jd_AutoEval.js)\n- id: jd_bean_change\n  name: 京东资产统计\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_bean_change.js\n  default_cron: 0 28 8,21 * * *\n  remark: JDPro 动态任务：京东资产统计 (jd_bean_change.js)\n- id: jd_bean_info\n  name: 京豆详情统计\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_bean_info.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：京豆详情统计 (jd_bean_info.js)\n- id: jd_beans_7days\n  name: 豆子7天统计\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_beans_7days.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：豆子7天统计 (jd_beans_7days.py)\n- id: jd_CheckCK\n  name: CK检测\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_CheckCK.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：CK检测 (jd_CheckCK.js)\n- id: jd_code2url\n  name: 口令转链接\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_code2url.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：口令转链接 (jd_code2url.js)\n- id: jd_deliverySign_sign\n  name: 天天领豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_deliverySign_sign.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：天天领豆 (jd_deliverySign_sign.js)\n- id: jd_delLjq\n  name: 批量删垃圾券\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_delLjq.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：批量删垃圾券 (jd_delLjq.js)\n- id: jd_dplhbshop\n  name: 大牌浏览店铺\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dplhbshop.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：大牌浏览店铺 (jd_dplhbshop.js)\n- id: jd_dpqd_main\n  name: 批量店铺签到（活动查询）\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dpqd_main.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：批量店铺签到（活动查询） (jd_dpqd_main.js)\n- id: jd_dpqd_sign\n  name: 批量店铺签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dpqd_sign.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：批量店铺签到 (jd_dpqd_sign.js)\n- id: jd_dpqd_single\n  name: 单个店铺签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dpqd_single.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：单个店铺签到 (jd_dpqd_single.js)\n- id: jd_dwapp\n  name: 积分换话费\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_dwapp.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：积分换话费 (jd_dwapp.js)\n- id: jd_farmnew_ck_help\n  name: 新农场CK顺序助力\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_farmnew_ck_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场CK顺序助力 (jd_farmnew_ck_help.js)\n- id: jd_farmnew_code_help\n  name: 新农场助力码助力\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_farmnew_code_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场助力码助力 (jd_farmnew_code_help.js)\n- id: jd_fish_help\n  name: 金融捕鱼助力\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_fish_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：金融捕鱼助力 (jd_fish_help.js)\n- id: jd_fruit_new\n  name: 新农场任务\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_fruit_new.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场任务 (jd_fruit_new.js)\n- id: jd_hdyxzd\n  name: 互动游戏赚豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_hdyxzd.js\n  default_cron: 0 6 8,16 * * *\n  remark: JDPro 动态任务：互动游戏赚豆 (jd_hdyxzd.js)\n- id: jd_hssign\n  name: hs每日签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_hssign.js\n  default_cron: 0 15 8 * * *\n  remark: JDPro 动态任务：hs每日签到 (jd_hssign.js)\n- id: jd_ifdraw\n  name: IF任务抽奖合集\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_ifdraw.js\n  default_cron: 0 33 7,15 * * *\n  remark: JDPro 动态任务：IF任务抽奖合集 (jd_ifdraw.js)\n- id: jd_jingpai\n  name: 竞拍竞猜\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_jingpai.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：竞拍竞猜 (jd_jingpai.js)\n- id: jd_joypark_leave\n  name: 汪汪庄园离线收金币\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_joypark_leave.js\n  default_cron: 0 1 1 29 2 *\n  remark: JDPro 动态任务：汪汪庄园离线收金币 (jd_joypark_leave.js)\n- id: jd_joypark_task\n  name: 汪汪庄园任务\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_joypark_task.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：汪汪庄园任务 (jd_joypark_task.js)\n- id: jd_jrddzjd\n  name: 天天赚京豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_jrddzjd.js\n  default_cron: 0 50 8,16 * * *\n  remark: JDPro 动态任务：天天赚京豆 (jd_jrddzjd.js)\n- id: jd_jrttlqy\n  name: 天天领权益\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_jrttlqy.js\n  default_cron: 0 23 9,13 * * *\n  remark: JDPro 动态任务：天天领权益 (jd_jrttlqy.js)\n- id: jd_lmdraw\n  name: LM任务抽奖合集\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_lmdraw.js\n  default_cron: 0 29 2 29 2 *\n  remark: JDPro 动态任务：LM任务抽奖合集 (jd_lmdraw.js)\n- id: jd_luckyDraw\n  name: 幸运抽奖\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_luckyDraw.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：幸运抽奖 (jd_luckyDraw.js)\n- id: jd_newfarmlottery\n  name: 新农场幸运转盘\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_newfarmlottery.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场幸运转盘 (jd_newfarmlottery.js)\n- id: jd_OnceApply\n  name: 一键价保\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_OnceApply.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：一键价保 (jd_OnceApply.js)\n- id: jd_pkabeans\n  name: 礼品卡领豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_pkabeans.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：礼品卡领豆 (jd_pkabeans.js)\n- id: jd_plantBean\n  name: 种豆得豆任务\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_plantBean.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：种豆得豆任务 (jd_plantBean.js)\n- id: jd_plantBean_help\n  name: 种豆得豆互助\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_plantBean_help.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：种豆得豆互助 (jd_plantBean_help.js)\n- id: jd_proxy_check\n  name: 代理检测\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_proxy_check.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：代理检测 (jd_proxy_check.js)\n- id: jd_qy_sign\n  name: 权益中心签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_qy_sign.js\n  default_cron: 0 21 10 * * *\n  remark: JDPro 动态任务：权益中心签到 (jd_qy_sign.js)\n- id: jd_rankVote\n  name: 排行榜投票\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_rankVote.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：排行榜投票 (jd_rankVote.js)\n- id: jd_rmvcart\n  name: 清空购物车\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_rmvcart.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：清空购物车 (jd_rmvcart.js)\n- id: jd_signbeanact_\n  name: 天天领豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_signbeanact_.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：天天领豆 (jd_signbeanact_.js)\n- id: jd_sldraw\n  name: SL任务抽奖合集\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_sldraw.js\n  default_cron: 0 1 1 1 1 *\n  remark: JDPro 动态任务：SL任务抽奖合集 (jd_sldraw.js)\n- id: jd_taskop\n  name: 重复任务优化\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_taskop.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：重复任务优化 (jd_taskop.py)\n- id: jd_ttgd\n  name: 天天刮京豆\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_ttgd.js\n  default_cron: 0 21 4,15 * * *\n  remark: JDPro 动态任务：天天刮京豆 (jd_ttgd.js)\n- id: jd_unsubscribe\n  name: 批量取关店铺和商品\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_unsubscribe.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：批量取关店铺和商品 (jd_unsubscribe.js)\n- id: jd_vu50\n  name: V你50超市卡\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_vu50.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：V你50超市卡 (jd_vu50.js)\n- id: jd_water_new\n  name: 新农场浇水\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_water_new.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：新农场浇水 (jd_water_new.js)\n- id: jd_wduoyu\n  name: 多投多赚\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_wduoyu.js\n  default_cron: 0 29 2 29 2 *\n  remark: JDPro 动态任务：多投多赚 (jd_wduoyu.js)\n- id: jd_weGameLottery\n  name: 互动游戏签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_weGameLottery.js\n  default_cron: 0 12 7,15 * * *\n  remark: JDPro 动态任务：互动游戏签到 (jd_weGameLottery.js)\n- id: jd_wsck\n  name: wskey本地转换\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_wsck.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：wskey本地转换 (jd_wsck.py)\n- id: jd_wskey\n  name: wskey转换\n  source: main\n  command: mise exec {mise_languages} -- python main/jd_wskey.py\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：wskey转换 (jd_wskey.py)\n- id: jd_wwmanor_merge\n  name: 汪汪庄园合成\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_wwmanor_merge.js\n  default_cron: 0 2 2 29 2 *\n  remark: JDPro 动态任务：汪汪庄园合成 (jd_wwmanor_merge.js)\n- id: jd_wxtoken_m\n  name: 快速缓存token\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_wxtoken_m.js\n  default_cron: 0 8 * * *\n  remark: JDPro 动态任务：快速缓存token (jd_wxtoken_m.js)\n- id: jd_xsjx\n  name: 限时京喜\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_xsjx.js\n  default_cron: 0 38 7,19 * * *\n  remark: JDPro 动态任务：限时京喜 (jd_xsjx.js)\n- id: jd_yssign\n  name: ys每日签到\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_yssign.js\n  default_cron: 0 20 9 * * *\n  remark: JDPro 动态任务：ys每日签到 (jd_yssign.js)\n- id: jd_zjindan\n  name: 天天砸金蛋\n  source: main\n  command: mise exec {mise_languages} -- node main/jd_zjindan.js\n  default_cron: 0 10 9,15 * * *\n  remark: JDPro 动态任务：天天砸金蛋 (jd_zjindan.js)\nscenarios:\n- id: standard\n  name: 标准运行模式\n  default: true\n  description: 智能精选日常资产变动通知、Cookie检测、农场、种豆与签到任务\n  task_presets:\n    jd_AutoEval:\n      enabled: false\n    jd_bean_change:\n      enabled: false\n    jd_bean_info:\n      enabled: false\n    jd_beans_7days:\n      enabled: false\n    jd_CheckCK:\n      enabled: true\n    jd_code2url:\n      enabled: false\n    jd_deliverySign_sign:\n      enabled: false\n    jd_delLjq:\n      enabled: false\n    jd_dplhbshop:\n      enabled: true\n    jd_dpqd_main:\n      enabled: true\n    jd_dpqd_sign:\n      enabled: true\n    jd_dpqd_single:\n      enabled: true\n    jd_dwapp:\n      enabled: false\n    jd_farmnew_ck_help:\n      enabled: true\n    jd_farmnew_code_help:\n      enabled: true\n    jd_fish_help:\n      enabled: false\n    jd_fruit_new:\n      enabled: true\n    jd_hdyxzd:\n      enabled: false\n    jd_hssign:\n      enabled: true\n    jd_ifdraw:\n      enabled: false\n    jd_jingpai:\n      enabled: false\n    jd_joypark_leave:\n      enabled: true\n    jd_joypark_task:\n      enabled: true\n    jd_jrddzjd:\n      enabled: false\n    jd_jrttlqy:\n      enabled: false\n    jd_lmdraw:\n      enabled: false\n    jd_luckyDraw:\n      enabled: false\n    jd_newfarmlottery:\n      enabled: true\n    jd_OnceApply:\n      enabled: false\n    jd_pkabeans:\n      enabled: false\n    jd_plantBean:\n      enabled: true\n    jd_plantBean_help:\n      enabled: true\n    jd_proxy_check:\n      enabled: false\n    jd_qy_sign:\n      enabled: true\n    jd_rankVote:\n      enabled: false\n    jd_rmvcart:\n      enabled: false\n    jd_signbeanact_:\n      enabled: false\n    jd_sldraw:\n      enabled: false\n    jd_taskop:\n      enabled: false\n    jd_ttgd:\n      enabled: false\n    jd_unsubscribe:\n      enabled: true\n    jd_vu50:\n      enabled: false\n    jd_water_new:\n      enabled: true\n    jd_wduoyu:\n      enabled: false\n    jd_weGameLottery:\n      enabled: true\n    jd_wsck:\n      enabled: false\n    jd_wskey:\n      enabled: false\n    jd_wwmanor_merge:\n      enabled: true\n    jd_wxtoken_m:\n      enabled: false\n    jd_xsjx:\n      enabled: false\n    jd_yssign:\n      enabled: true\n    jd_zjindan:\n      enabled: false\n- id: minimal\n  name: 极简节能模式\n  description: 仅保留 Cookie 状态检测与资产变动通知，省电低性能损耗\n  task_presets:\n    jd_AutoEval:\n      enabled: false\n    jd_bean_change:\n      enabled: true\n    jd_bean_info:\n      enabled: false\n    jd_beans_7days:\n      enabled: false\n    jd_CheckCK:\n      enabled: true\n    jd_code2url:\n      enabled: false\n    jd_deliverySign_sign:\n      enabled: false\n    jd_delLjq:\n      enabled: false\n    jd_dplhbshop:\n      enabled: false\n    jd_dpqd_main:\n      enabled: false\n    jd_dpqd_sign:\n      enabled: false\n    jd_dpqd_single:\n      enabled: false\n    jd_dwapp:\n      enabled: false\n    jd_farmnew_ck_help:\n      enabled: false\n    jd_farmnew_code_help:\n      enabled: false\n    jd_fish_help:\n      enabled: false\n    jd_fruit_new:\n      enabled: false\n    jd_hdyxzd:\n      enabled: false\n    jd_hssign:\n      enabled: false\n    jd_ifdraw:\n      enabled: false\n    jd_jingpai:\n      enabled: false\n    jd_joypark_leave:\n      enabled: false\n    jd_joypark_task:\n      enabled: false\n    jd_jrddzjd:\n      enabled: false\n    jd_jrttlqy:\n      enabled: false\n    jd_lmdraw:\n      enabled: false\n    jd_luckyDraw:\n      enabled: false\n    jd_newfarmlottery:\n      enabled: false\n    jd_OnceApply:\n      enabled: false\n    jd_pkabeans:\n      enabled: false\n    jd_plantBean:\n      enabled: false\n    jd_plantBean_help:\n      enabled: false\n    jd_proxy_check:\n      enabled: false\n    jd_qy_sign:\n      enabled: false\n    jd_rankVote:\n      enabled: false\n    jd_rmvcart:\n      enabled: false\n    jd_signbeanact_:\n      enabled: false\n    jd_sldraw:\n      enabled: false\n    jd_taskop:\n      enabled: false\n    jd_ttgd:\n      enabled: false\n    jd_unsubscribe:\n      enabled: false\n    jd_vu50:\n      enabled: false\n    jd_water_new:\n      enabled: false\n    jd_wduoyu:\n      enabled: false\n    jd_weGameLottery:\n      enabled: false\n    jd_wsck:\n      enabled: false\n    jd_wskey:\n      enabled: false\n    jd_wwmanor_merge:\n      enabled: false\n    jd_wxtoken_m:\n      enabled: false\n    jd_xsjx:\n      enabled: false\n    jd_yssign:\n      enabled: false\n    jd_zjindan:\n      enabled: false\n- id: full\n  name: 全功能完整模式\n  description: 自动全量开启上游解析到的全部任务\n  task_presets:\n    jd_AutoEval:\n      enabled: true\n    jd_bean_change:\n      enabled: true\n    jd_bean_info:\n      enabled: true\n    jd_beans_7days:\n      enabled: true\n    jd_CheckCK:\n      enabled: true\n    jd_code2url:\n      enabled: true\n    jd_deliverySign_sign:\n      enabled: true\n    jd_delLjq:\n      enabled: true\n    jd_dplhbshop:\n      enabled: true\n    jd_dpqd_main:\n      enabled: true\n    jd_dpqd_sign:\n      enabled: true\n    jd_dpqd_single:\n      enabled: true\n    jd_dwapp:\n      enabled: true\n    jd_farmnew_ck_help:\n      enabled: true\n    jd_farmnew_code_help:\n      enabled: true\n    jd_fish_help:\n      enabled: true\n    jd_fruit_new:\n      enabled: true\n    jd_hdyxzd:\n      enabled: true\n    jd_hssign:\n      enabled: true\n    jd_ifdraw:\n      enabled: true\n    jd_jingpai:\n      enabled: true\n    jd_joypark_leave:\n      enabled: true\n    jd_joypark_task:\n      enabled: true\n    jd_jrddzjd:\n      enabled: true\n    jd_jrttlqy:\n      enabled: true\n    jd_lmdraw:\n      enabled: true\n    jd_luckyDraw:\n      enabled: true\n    jd_newfarmlottery:\n      enabled: true\n    jd_OnceApply:\n      enabled: true\n    jd_pkabeans:\n      enabled: true\n    jd_plantBean:\n      enabled: true\n    jd_plantBean_help:\n      enabled: true\n    jd_proxy_check:\n      enabled: true\n    jd_qy_sign:\n      enabled: true\n    jd_rankVote:\n      enabled: true\n    jd_rmvcart:\n      enabled: true\n    jd_signbeanact_:\n      enabled: true\n    jd_sldraw:\n      enabled: true\n    jd_taskop:\n      enabled: true\n    jd_ttgd:\n      enabled: true\n    jd_unsubscribe:\n      enabled: true\n    jd_vu50:\n      enabled: true\n    jd_water_new:\n      enabled: true\n    jd_wduoyu:\n      enabled: true\n    jd_weGameLottery:\n      enabled: true\n    jd_wsck:\n      enabled: true\n    jd_wskey:\n      enabled: true\n    jd_wwmanor_merge:\n      enabled: true\n    jd_wxtoken_m:\n      enabled: true\n    jd_xsjx:\n      enabled: true\n    jd_yssign:\n      enabled: true\n    jd_zjindan:\n      enabled: true\n",
       "manifest_url": "https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/jdpro/app.yaml",
-      "updated_at": "2026-09-17T00:42:21Z"
+      "updated_at": "2026-09-17T00:55:04Z"
     }
   ]
 }

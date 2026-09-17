@@ -149,5 +149,6 @@ trigger: always_on
 2. **全局聚合索引 `build-all.py`**：
    - 自动扫描 `apps/` 目录下所有 `app.yaml`。
    - 不进行破坏性重写，原汁原味聚合至仓库根目录的 `apps.json` 中供面板拉取消费。
-3. **本地构建与测试**：
-   - 运行 `mise x -- python build-all.py` 验证全量索引构建是否成功通过。
+3. **构建执行规则（重要）**：
+   - **严禁在本地手动执行 `build.py`**；
+   - 所有的构建、生成与全量索引统一交由 GitHub Actions (CI/CD) 在远端流水线中自动化触发与完成。

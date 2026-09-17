@@ -46,13 +46,7 @@ def main():
         "sources": [
             {
                 "id": "main",
-                "source_type": "git",
-                "source_url": "https://github.com/duorameng/ark.git",
-                "branch": "main",
-                "path": "",
-                "single_file": False,
-                "proxy": "ghproxy",
-                "target_path": "main"
+                "source_type": "null"
             }
         ],
 
