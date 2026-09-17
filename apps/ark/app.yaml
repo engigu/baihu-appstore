@@ -87,7 +87,7 @@ setup:
 env_schema:
 - key: ARK_BACKUP_DIR
   label: 工作区源路径 (ARK_BACKUP_DIR)
-  type: normal
+  type: string
   tag: '{tag}'
   required: false
   default: /root/workspace
@@ -103,7 +103,7 @@ env_schema:
   placeholder: YourSecretKey
 - key: ARK_REGISTRY_TYPE
   label: 目标注册表通道 (ali/gh/both)
-  type: normal
+  type: string
   tag: '{tag}'
   required: false
   default: gh
@@ -111,7 +111,7 @@ env_schema:
   placeholder: gh
 - key: ARK_REPOSITORY
   label: 目标镜像仓库路径
-  type: normal
+  type: string
   tag: '{tag}'
   required: false
   default: ghcr.io/your-username/ark-backup

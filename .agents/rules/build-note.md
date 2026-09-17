@@ -100,7 +100,7 @@ trigger: always_on
 - **`key`**（必填）：实际注入系统的环境变量名（如 `ARK_BACKUP_DIR`、`JD_COOKIE`）。
 - **`label`**（必填）：前端表单显示的中文标题。
 - **`type`**（必填）：字段控件类型：
-  - `normal` / `string`：常规文本输入框。
+  - `string`：常规文本输入框。
   - `secret`：敏感密钥输入框（带遮罩，防止浏览器自动填充）。
   - `boolean`：开关 Switch 控件。
   - `select`：下拉单选框（需提供 `options` 列表，包含 `label` 与 `value`）。

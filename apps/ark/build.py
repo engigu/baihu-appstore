@@ -127,7 +127,7 @@ def main():
             {
                 "key": "ARK_BACKUP_DIR",
                 "label": "工作区源路径 (ARK_BACKUP_DIR)",
-                "type": "normal",
+                "type": "string",
                 "tag": "{tag}",
                 "required": False,
                 "default": "/root/workspace",
@@ -147,7 +147,7 @@ def main():
             {
                 "key": "ARK_REGISTRY_TYPE",
                 "label": "目标注册表通道 (ali/gh/both)",
-                "type": "normal",
+                "type": "string",
                 "tag": "{tag}",
                 "required": False,
                 "default": "gh",
@@ -157,7 +157,7 @@ def main():
             {
                 "key": "ARK_REPOSITORY",
                 "label": "目标镜像仓库路径",
-                "type": "normal",
+                "type": "string",
                 "tag": "{tag}",
                 "required": False,
                 "default": "ghcr.io/your-username/ark-backup",
