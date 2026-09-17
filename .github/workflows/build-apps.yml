@@ -62,6 +62,9 @@ jobs:
         run: |
           python build-all.py
 
+      - name: Install Mise CLI
+        uses: jdx/mise-action@v2
+
       - name: Set up Go 1.26
         uses: actions/setup-go@v5
         with:
