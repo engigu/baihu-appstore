@@ -16,7 +16,7 @@ build_opts:
   skip_setup: false
   skip_sync: false
 schedule_opts:
-  schedule: "0 0 8 * * *"
+  schedule: 0 0 8 * * *
   random_range: 0
   timeout: 30
   retry_count: 0
