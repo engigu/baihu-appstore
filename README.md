@@ -78,10 +78,11 @@ template:
 # 2. 脚本代码源列表 (Sources)
 # ------------------------------------------------------------------------------
 # 定义上游源码仓库或单文件直链，支持配置多个源，100% 复用白虎 reposync 参数
+# 注：对于仅拉取 Release 二进制产物或无上游源码的应用，source_type 可声明为 null / none，无需代码同步
 sources:
   - id: "main"                        # 源唯一标识符
-    source_type: "git"                # git (Git仓库) 或 url (单文件直链)
-    source_url: "https://github.com/user/repo.git" # 源码地址
+    source_type: "git"                # git (Git仓库) / url (单文件直链) / null (纯二进制免同步模式)
+    source_url: "https://github.com/user/repo.git" # 源码地址 (source_type 为 null 时可省略)
     branch: "main"                    # 指定检出分支
     path: ""                          # 稀疏检出子目录 (留空为全量)
     single_file: false                # 是否为单文件模式

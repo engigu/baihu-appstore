@@ -117,7 +117,7 @@ def main():
                 "label": "工作区源路径 (ARK_BACKUP_DIR)",
                 "type": "normal",
                 "tag": "{tag}",
-                "required": True,
+                "required": False,
                 "description": "需要备份与同步的工作区根目录路径（如 /root/workspace）",
                 "placeholder": "/root/workspace"
             },

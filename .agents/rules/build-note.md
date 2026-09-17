@@ -51,7 +51,8 @@ trigger: always_on
 - **`source_type`**（必填）：数据源类型：
   - `git`：Git 仓库代码同步。
   - `url`：单文件直接下载。
-- **`source_url`**（必填）：Git 仓库克隆地址或下载链接。
+  - `null` / `none`：空源类型（适用于纯 Release 二进制产物或无需上游源码克隆的应用。白虎面板在安装时将直接跳过 `reposync` 阶段）。
+- **`source_url`**：Git 仓库克隆地址或下载链接（`source_type` 为 `git` 或 `url` 时必填；为 `null`/`none` 时可省略）。
 - **`branch`**：Git 分支名（默认 `main` 或 `master`）。
 - **`path`**：稀疏检出子目录（留空为全量检出）。
 - **`single_file`**：是否为单文件（布尔值，`false` / `true`）。
