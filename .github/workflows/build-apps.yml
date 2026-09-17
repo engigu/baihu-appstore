@@ -33,9 +33,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 步骤 1: 扫描所有 app 并导出 Matrix JSON
-  discover:
-    name: Discover Applications
+  # 步骤 1: 扫描所有 app 并单次编译 Baihu CLI 二进制供所有矩阵节点共享
+  prepare:
+    name: Prepare App Matrix & Build CLI
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -49,22 +49,6 @@ jobs:
           APPS=$(python3 -c 'import os, json; print(json.dumps([os.path.join("apps", d, "app.yaml") for d in os.listdir("apps") if os.path.isfile(os.path.join("apps", d, "app.yaml"))]))')
           echo "matrix={\"app\": $APPS}" >> $GITHUB_OUTPUT
 
-  # 步骤 2: 矩阵并行对每个应用运行 CLI 硬核验证 (多 Runner 并行)
-  validate:
-    name: Validate (${{ matrix.app }})
-    needs: discover
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
-
-    steps:
-      - name: Checkout AppStore Repository
-        uses: actions/checkout@v4
-
-      - name: Install Mise CLI
-        uses: jdx/mise-action@v2
-
       - name: Set up Go 1.26
         uses: actions/setup-go@v5
         with:
@@ -77,12 +61,43 @@ jobs:
           ref: ${{ github.event.inputs.panel_branch || 'main' }}
           path: 'baihu-panel-src'
 
-      - name: Build Baihu CLI Binary
+      - name: Build Baihu CLI Binary (Single Build)
         run: |
           cd baihu-panel-src
           CGO_ENABLED=0 go build -o ../baihu ./main.go
           cd ..
           chmod +x ./baihu
+
+      - name: Upload Baihu CLI Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: baihu-cli-binary
+          path: ./baihu
+
+  # 步骤 2: 矩阵并行对每个应用运行 CLI 硬核验证 (仅需下载编译好的 CLI，无重复编译)
+  validate:
+    name: Validate (${{ matrix.app }})
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+
+    steps:
+      - name: Checkout AppStore Repository
+        uses: actions/checkout@v4
+
+      - name: Download Baihu CLI Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: baihu-cli-binary
+          path: ./
+
+      - name: Ensure CLI Executable
+        run: chmod +x ./baihu
+
+      - name: Install Mise CLI
+        uses: jdx/mise-action@v2
 
       - name: Dry-Run App Deployment with SQLite
         run: |
