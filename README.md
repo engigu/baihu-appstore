@@ -90,8 +90,10 @@ schedule_opts:
 # 1. 模板占位符与运行环境声明 (Template)
 # ------------------------------------------------------------------------------
 # 声明自定义宏变量，在当前 YAML 的 {tag}、{mise_languages} 等位置原样保留；
-# 白虎面板 (Go 核心解析器) 在运行时会自动解析该节点，提取 mise_languages 作为应用运行环境并在 UI 中展示！
-# 重要：mise_languages 只能使用空格分隔多个环境（严禁使用逗号，例如 "dotnet@8.0.425 node@23"）
+# 白虎面板 (Go 核心解析器) 在运行时会自动解析该节点：
+# 1. tag 必须统一使用大驼峰 (PascalCase) 命名 (例如 "BiliBiliToolPro"、"JDPro"、"Ark")，前端安装界面与统一归集标签将直接回显该 Tag；
+# 2. 每个变量或任务若单独配置 Tag 则以各自定义为准，若为占位符 {tag} 或留空，面板将统一继承 template 中声明的大驼峰 Tag；
+# 3. mise_languages 只能使用空格分隔多个环境（严禁使用逗号，例如 "dotnet@8.0.425 node@23"）。
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "dotnet@8.0.425 node@23"

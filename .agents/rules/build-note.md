@@ -47,7 +47,9 @@ trigger: always_on
     - tag: "BiliBiliToolPro"
     - mise_languages: "dotnet@8.0.425 node@23"
   ```
-  *说明*：`mise_languages` 声明应用运行时所依附的多语言环境，**只能以空格分隔多个语言版本（严禁使用逗号，例如 `"dotnet@8.0.425 node@23"`）**。白虎面板在安装/解析 Manifest 时会自动提取并渲染至 UI 面板中供用户选择调整。
+  *说明*：
+  1. **`tag` 命名规范**：必须统一采用**大驼峰 (PascalCase)** 格式（例如 `"BiliBiliToolPro"`、`"JDPro"`、`"Ark"`）。白虎面板前端安装界面与任务/环境变量归集标签将直接回显并使用该 Tag。
+  2. **`mise_languages` 环境规范**：声明应用运行时所依附的多语言环境，**只能以空格分隔多个语言版本（严禁使用逗号，例如 `"dotnet@8.0.425 node@23"`）**。白虎面板在安装/解析 Manifest 时会自动提取并渲染至 UI 面板中供用户选择调整。
 - **预装底座环境说明**：
   白虎面板系统镜像默认预装标准环境，推荐优先复用以实现秒级启动与免重复安装：
   - **Node.js**: `node@23.11.1`
@@ -106,7 +108,7 @@ trigger: always_on
   - `boolean`：开关 Switch 控件。
   - `select`：下拉单选框（需提供 `options` 列表，包含 `label` 与 `value`）。
   - `number`：数字输入框。
-- **`tag`**：绑定的应用标签，通常填写 `"{tag}"`。
+- **`tag`**：绑定的应用标签。推荐统一填写 `"{tag}"`（解析继承 `template` 中的大驼峰 Tag）；若项显式配置了自定义 Tag，则以各自定义配置为准。
 - **`required`**：是否必填（`true` / `false`）。
 - **`default`**：默认缺省值。
 - **`description`**：字段用法说明与提示。
@@ -125,7 +127,7 @@ trigger: always_on
   - **`command`**（必填）：具体执行的纯原生 CLI 命令（如 `dotnet Ray.BiliBiliTool.Console.dll` 或 `node main/jd_CheckCK.js`；**坚决不写 `mise exec` 前缀**，多语言外壳由白虎面板自动动态包裹）。
   - **`default_cron`**（必填）：默认 Cron 定时表达式（6 位或 5 位标准 Cron）。
   - **`enabled`**（必填）：默认是否启用（`true` / `false`）。
-  - **`tag`**（可选）：关联标签，推荐统一填 `"{tag}"`，与环境变量保持一致归集。
+  - **`tag`**（可选）：关联标签，推荐统一填 `"{tag}"`（继承 `template` 中的大驼峰 Tag）；若任务显式配置了专属 Tag，则以各自定义配置为准。
   - **`remark`**：任务功能备注与执行说明。
 - **`sync_rules.defaults`**（可选）：
   - `timeout`：默认执行超时时间（单位：分钟）。
