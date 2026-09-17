@@ -22,6 +22,18 @@ trigger: always_on
 - **`description`**（必填）：应用的详细功能介绍。
 - **`icon`**（必填）：应用图标图片公网直链 URL。
 - **`homepage`**（必填）：上游开源项目主页或 GitHub 仓库地址。
+- **`build_opts`**（可选）：高级构建与部署控制预设开关：
+  - `force_setup`：布尔值，是否默认强制重新编译（跳过 check 探活，强行执行 setup.install，默认 `false`）。
+  - `skip_setup`：布尔值，是否默认跳过环境与依赖安装（完全跳过 setup 阶段，默认 `false`）。
+  - `skip_sync`：布尔值，是否默认跳过代码源同步（使用本地已有代码，默认 `false`）。
+- **`schedule` / `schedule_opts`**（可选）：应用主任务 (Master Task) 的默认定时规则与调度策略预设（安装界面默认填充，亦可不填）：
+  - `schedule`：字符串，默认 Cron 定时表达式（6 位秒级标准 Cron，如 `0 0 8 * * *`）。
+  - `schedule_opts`：对象结构，完整覆盖主任务调度策略：
+    - `schedule`：默认 Cron 定时规则表达式（必须 6 位）。
+    - `random_range`：基准时间后随机延迟范围（单位：秒）。
+    - `timeout`：单次运行执行超时（单位：分钟，默认 30）。
+    - `retry_count`：失败重试次数（默认 0）。
+    - `retry_interval`：失败重试间隔（单位：秒，默认 0）。
 
 ---
 
@@ -153,3 +165,5 @@ trigger: always_on
 3. **构建执行规则（重要）**：
    - **严禁在本地手动执行 `build.py`**；
    - 所有的构建、生成与全量索引统一交由 GitHub Actions (CI/CD) 在远端流水线中自动化触发与完成。
+4. 每次新增yml的定义规范和概念的时候，需要更新readme和这个rule的规则。
+

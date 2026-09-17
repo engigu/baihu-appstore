@@ -218,6 +218,18 @@ def main():
         "description": f"基于 Node.js 的京东自动化全功能任务集合，动态包含 {len(scanned_tasks)} 个福利任务，支持资产变动通知、东东农场、汪汪庄园、店铺签到、签到提现等",
         "icon": "https://img10.360buyimg.com/img/jfs/t1/158580/38/20042/13936/6090f4e3E06b86cf0/64dd78b273d6b05e.png",
         "homepage": "https://github.com/6dylan6/jdpro",
+        "build_opts": {
+            "force_setup": True,
+            "skip_setup": False,
+            "skip_sync": False
+        },
+        "schedule_opts": {
+            "schedule": "0 0 8 * * *",
+            "random_range": 0,
+            "timeout": 30,
+            "retry_count": 0,
+            "retry_interval": 0
+        },
 
         "sources": [
             {

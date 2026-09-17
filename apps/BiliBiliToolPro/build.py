@@ -263,6 +263,16 @@ template:
 description: "基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理"
 icon: "https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png"
 homepage: "https://github.com/RayWangQvQ/BiliBiliToolPro"
+build_opts:
+  force_setup: true
+  skip_setup: false
+  skip_sync: false
+schedule_opts:
+  schedule: "0 0 8 * * *"
+  random_range: 0
+  timeout: 30
+  retry_count: 0
+  retry_interval: 0
 
 # ==============================================================================
 # 1. 脚本代码源列表 (Sources) —— 支持定义多个源，100% 复用 baihu reposync 参数规范

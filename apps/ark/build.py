@@ -37,11 +37,23 @@ def main():
         "last_commit": "2026-09-16T00:00:00+08:00",
         "template": [
             {"tag": "Ark"},
-            {"mise_languages": "go@1.22.5"}
+            {"mise_languages": "node@23.11.1"}
         ],
         "description": "基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。",
         "icon": "https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png",
         "homepage": "https://github.com/duorameng/ark",
+        "build_opts": {
+            "force_setup": True,
+            "skip_setup": False,
+            "skip_sync": False
+        },
+        "schedule_opts": {
+            "schedule": "0 0 8 * * *",
+            "random_range": 0,
+            "timeout": 30,
+            "retry_count": 0,
+            "retry_interval": 0
+        },
 
         "sources": [
             {
@@ -51,10 +63,10 @@ def main():
         ],
 
         "setup": {
-            "check": "node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\"",
+            "check": "mise exec {mise_languages} -- node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\"",
             "install": (
                 "echo \">> 正在从 GitHub Release 下载 Ark 预编译二进制程序...\"\n"
-                "node -e \"\n"
+                "mise exec {mise_languages} -- node -e \"\n"
                 "  const fs = require('fs');\n"
                 "  const path = require('path');\n"
                 "  const binDir = path.join('{app_dir}', 'bin');\n"
@@ -108,7 +120,7 @@ def main():
                 "\"\n"
                 "echo \">> Ark 部署完成！\""
             ),
-            "uninstall": "node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
+            "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
         },
 
         "env_schema": [
@@ -118,6 +130,7 @@ def main():
                 "type": "normal",
                 "tag": "{tag}",
                 "required": False,
+                "default": "/root/workspace",
                 "description": "需要备份与同步的工作区根目录路径（如 /root/workspace）",
                 "placeholder": "/root/workspace"
             },
@@ -127,6 +140,7 @@ def main():
                 "type": "secret",
                 "tag": "{tag}",
                 "required": False,
+                "default": "YourSecretKey",
                 "description": "端到端 AES-256-CBC 封条自定义加密口令",
                 "placeholder": "YourSecretKey"
             },
@@ -146,8 +160,9 @@ def main():
                 "type": "normal",
                 "tag": "{tag}",
                 "required": False,
-                "description": "目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）",
-                "placeholder": "ghcr.io/duorameng/ark"
+                "default": "ghcr.io/your-username/ark-backup",
+                "description": "目标 OCI 镜像仓库全路径（如 ghcr.io/your-username/ark-backup）",
+                "placeholder": "ghcr.io/your-username/ark-backup"
             }
         ],
 
