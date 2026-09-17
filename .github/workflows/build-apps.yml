@@ -33,8 +33,70 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 步骤 1: 扫描所有 app 并导出 Matrix JSON
+  discover:
+    name: Discover Applications
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - name: Checkout AppStore Repository
+        uses: actions/checkout@v4
+
+      - name: Generate Matrix Config
+        id: set-matrix
+        run: |
+          APPS=$(python3 -c 'import os, json; print(json.dumps([os.path.join("apps", d, "app.yaml") for d in os.listdir("apps") if os.path.isfile(os.path.join("apps", d, "app.yaml"))]))')
+          echo "matrix={\"app\": $APPS}" >> $GITHUB_OUTPUT
+
+  # 步骤 2: 矩阵并行对每个应用运行 CLI 硬核验证 (多 Runner 并行)
+  validate:
+    name: Validate (${{ matrix.app }})
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+
+    steps:
+      - name: Checkout AppStore Repository
+        uses: actions/checkout@v4
+
+      - name: Install Mise CLI
+        uses: jdx/mise-action@v2
+
+      - name: Set up Go 1.26
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.26'
+
+      - name: Checkout Baihu Panel Engine
+        uses: actions/checkout@v4
+        with:
+          repository: 'engigu/baihu-panel'
+          ref: ${{ github.event.inputs.panel_branch || 'main' }}
+          path: 'baihu-panel-src'
+
+      - name: Build Baihu CLI Binary
+        run: |
+          cd baihu-panel-src
+          CGO_ENABLED=0 go build -o ../baihu ./main.go
+          cd ..
+          chmod +x ./baihu
+
+      - name: Dry-Run App Deployment with SQLite
+        run: |
+          export DB_TYPE="sqlite"
+          export DB_DSN="./baihu_ci_test.db"
+          echo "=================================================="
+          echo ">> 正在对应用进行矩阵并行硬核部署测试: ${{ matrix.app }}"
+          echo "=================================================="
+          ./baihu app apply "${{ matrix.app }}" --rebuild
+
+  # 步骤 3: 校验全部通过后，构建索引、提交代码并部署 Pages
   build:
-    name: Build All Applications
+    name: Build All & Package
+    needs: validate
     runs-on: ubuntu-latest
 
     steps:
@@ -62,41 +124,6 @@ jobs:
         run: |
           python build-all.py
 
-      - name: Install Mise CLI
-        uses: jdx/mise-action@v2
-
-      - name: Set up Go 1.26
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Checkout Baihu Panel Engine
-        uses: actions/checkout@v4
-        with:
-          repository: 'engigu/baihu-panel'
-          ref: ${{ github.event.inputs.panel_branch || 'main' }}
-          path: 'baihu-panel-src'
-
-      - name: Build Baihu CLI Binary
-        run: |
-          cd baihu-panel-src
-          CGO_ENABLED=0 go build -o ../baihu ./main.go
-          cd ..
-          chmod +x ./baihu
-
-      - name: Validate Applications with Baihu CLI (SQLite Dry-Run)
-        run: |
-          export DB_TYPE="sqlite"
-          export DB_DSN="./baihu_ci_test.db"
-          for app_file in apps/*/app.yaml; do
-            if [ -f "$app_file" ]; then
-              echo "=================================================="
-              echo ">> 正在对应用规范进行校验与硬核部署测试: $app_file"
-              echo "=================================================="
-              ./baihu app apply "$app_file" --rebuild || exit 1
-            fi
-          done
-
       - name: Commit and Push Changes (Push & Dispatch Only)
         if: github.event_name != 'pull_request'
         run: |
@@ -116,7 +143,6 @@ jobs:
         run: |
           mkdir -p _site
           cp apps.json _site/
-          # 拷贝各个应用的 app.yaml 供静态访问
           mkdir -p _site/apps
           cp -r apps/* _site/apps/ 2>/dev/null || true
 
@@ -151,4 +177,3 @@ jobs:
         run: |
           echo ">> 正在强刷 jsDelivr CDN 全球节点缓存..."
           curl -s https://purge.jsdelivr.net/gh/engigu/baihu-appstore@main/apps.json || true
-
