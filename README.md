@@ -121,16 +121,11 @@ setup:
   # 依赖快速探测命令：退出码 0 表示已就绪秒级跳过；非 0 则进入安装
   check: "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v23')) process.exit(1)\""
 
-> [!TIP]
-> **预装底座环境说明 (Docker Base Environments)**：
-> 白虎面板系统镜像内已预装统一的标准运行环境及全局环境变量，编写应用 Manifest 时推荐优先复用：
-> - **时区**: `TZ=Asia/Shanghai`
-> - **Node.js**: `NODE_VERSION=23.11.1` (`node@23.11.1`)
-> - **Python**: `PYTHON_VERSION=3.13.12` (`python@3.13.12`)
-> - **Mise 目录**: `MISE_DATA_DIR=/opt/mise-base`, `MISE_CONFIG_DIR=/opt/mise-base`
-> - **PATH**: `/opt/mise-base/shims:/opt/mise-base/bin:$PATH`
-> 
-> 在 `app.yaml` 的 `template` 节点配置 `mise_languages: "node@23.11.1"` 或 `python@3.13.12` 可直接调用镜像预装环境，实现 0.1 秒秒级启动与免在线重复安装。
+  # ------------------------------------------------------------------------------
+  # 预装底座环境说明 (Docker Base Environments)：
+  # 白虎面板镜像预装: TZ=Asia/Shanghai, Node.js (node@23.11.1), Python (python@3.13.12)
+  # 在 template 节点配置 mise_languages: "node@23.11.1" 或 "python@3.13.12" 可直接复用预装环境实现秒级启动。
+  # ------------------------------------------------------------------------------
 
   # 原生 Shell 安装脚本：安装依赖、拉取工具包或预编译产物
   install: |
