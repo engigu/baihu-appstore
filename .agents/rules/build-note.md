@@ -124,6 +124,7 @@ trigger: always_on
   - **`command`**（必填）：具体执行的 CLI 命令（可引用 `{app_dir}` 变量，如 `{app_dir}/bin/ark check`）。
   - **`default_cron`**（必填）：默认 Cron 定时表达式（6 位或 5 位标准 Cron）。
   - **`enabled`**（必填）：默认是否启用（`true` / `false`）。
+  - **`tag`**（可选）：关联标签，推荐统一填 `"{tag}"`，与环境变量保持一致归集。
   - **`remark`**：任务功能备注与执行说明。
 - **`sync_rules.defaults`**（可选）：
   - `timeout`：默认执行超时时间（单位：分钟）。
