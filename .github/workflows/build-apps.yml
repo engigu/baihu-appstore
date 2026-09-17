@@ -12,6 +12,11 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'apps/**'
+      - 'build-all.py'
+      - 'requirements.txt'
+      - '.github/workflows/build-apps.yml'
   workflow_dispatch:
     inputs:
       panel_branch:
