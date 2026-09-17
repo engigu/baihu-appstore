@@ -84,7 +84,8 @@ setup:
       tryDownload(0);
     "
     echo ">> Ark 部署完成！"
-  uninstall: mise exec {mise_languages} -- node -e "const p=require('path');const d=process.env.APP_DIR||process.cwd();try{require('fs').rmSync(p.join(d,'bin'),{recursive:true,force:true})}catch(e){}"
+  uninstall: mise exec {mise_languages} -- node -e "const p=require('path');const
+    d=process.env.APP_DIR||process.cwd();try{require('fs').rmSync(p.join(d,'bin'),{recursive:true,force:true})}catch(e){}"
 env_schema:
 - key: ARK_BACKUP_DIR
   label: 工作区源路径 (ARK_BACKUP_DIR)
