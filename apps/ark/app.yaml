@@ -1,151 +1,157 @@
-# ==============================================================================
-# 白虎面板应用规范定义文件 (Baihu Application Specification)
-# 应用名称: Ark 班轮货运管理终端
-# 规范版本: v1
-# 本文件由 apps/ark/build.py 自动构建生成 (请勿手动修改)
-# ==============================================================================
-
-spec_version: "v1"
-id: "ark"
-name: "Ark 班轮货运管理终端"
-version: "1.0.0"
-author: "duorameng"
-category: "系统工具"
-last_commit: "2026-09-16T00:00:00+08:00"
+spec_version: v1
+id: ark
+name: Ark 班轮货运管理终端
+version: 1.0.0
+author: duorameng
+category: 系统工具
+last_commit: '2026-09-16T00:00:00+08:00'
 template:
-  - tag: "Ark"
-  - mise_languages: "go@1.22.5"
-description: "基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。"
-icon: "https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png"
-homepage: "https://github.com/duorameng/ark"
-
+- tag: Ark
+- mise_languages: go@1.22.5
+description: 基于 OCI 标准协议与 Golang 独立单二进制的云端工作负载快照交付与分布式工作区同步系统，支持 AES-256 加密封条与极速分层增量直推。
+icon: https://raw.githubusercontent.com/duorameng/ark/main/docs/images/logo.png
+homepage: https://github.com/duorameng/ark
 sources:
-  - id: "main"
-    source_type: "git"
-    source_url: "https://github.com/duorameng/ark.git"
-    branch: "main"
-    path: ""
-    single_file: false
-    proxy: "ghproxy"
-    target_path: "main"
-
+- id: main
+  source_type: git
+  source_url: https://github.com/duorameng/ark.git
+  branch: main
+  path: ''
+  single_file: false
+  proxy: ghproxy
+  target_path: main
 setup:
-  check: "node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\""
+  check: node -e "const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)"
   install: |-
-    echo ">> 正在自动准备跨平台 Ark 单二进制程序 (Linux / macOS / Windows)..."
+    echo ">> 正在从 GitHub Release 下载 Ark 预编译二进制程序..."
     node -e "
       const fs = require('fs');
       const path = require('path');
       const binDir = path.join('{app_dir}', 'bin');
-      const mainDir = path.join('{app_dir}', 'main');
       if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
 
       const isWin = process.platform === 'win32';
       const targetName = isWin ? 'ark.exe' : 'ark';
       const targetPath = path.join(binDir, targetName);
-
-      const candidatePaths = [
-        path.join(mainDir, isWin ? 'ark.exe' : 'ark'),
-        path.join(mainDir, isWin ? 'ark' : 'ark.exe')
+      const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');
+      const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;
+      const mirrors = [
+        'https://ghproxy.net/' + rawUrl,
+        'https://mirror.ghproxy.com/' + rawUrl,
+        'https://ghfast.top/' + rawUrl,
+        'https://ghproxy.com/' + rawUrl,
+        rawUrl
       ];
 
-      let copied = false;
-      for (const p of candidatePaths) {
-        if (fs.existsSync(p)) {
-          fs.copyFileSync(p, targetPath);
-          copied = true;
-          console.log('>> 已从源码库直接提取并装配程序:', targetName);
-          break;
+      const tryDownload = (index) => {
+        if (index >= mirrors.length) {
+          console.error('>> [错误] 所有加速源均下载失败，请检查网络连通性');
+          process.exit(1);
         }
-      }
-
-      if (!copied && isWin) {
-        // 当没有二进制时若在 Windows 且拥有 go 环境，尝试快速编译
-        try {
-          require('child_process').execSync('go build -ldflags=\"-s -w\" -o ' + targetPath, { cwd: mainDir });
-          console.log('>> 已自动完成本地程序装配');
-          copied = true;
-        } catch(e){}
-      }
-      try { if (!isWin && fs.existsSync(targetPath)) fs.chmodSync(targetPath, 0o755); } catch(e){}
+        const currentUrl = mirrors[index];
+        const fetchUrl = (url) => {
+          const client = url.startsWith('https') ? require('https') : require('http');
+          const file = fs.createWriteStream(targetPath);
+          const req = client.get(url, (res) => {
+            if (res.statusCode === 301 || res.statusCode === 302) {
+              fetchUrl(res.headers.location);
+            } else if (res.statusCode === 200) {
+              res.pipe(file);
+              file.on('finish', () => {
+                file.close();
+                if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }
+                console.log('>> Ark Release 二进制下载就绪:', targetName);
+              });
+            } else {
+              file.close();
+              try { fs.unlinkSync(targetPath); } catch(e){}
+              tryDownload(index + 1);
+            }
+          });
+          req.on('error', () => {
+            file.close();
+            try { fs.unlinkSync(targetPath); } catch(e){}
+            tryDownload(index + 1);
+          });
+        };
+        fetchUrl(currentUrl);
+      };
+      tryDownload(0);
     "
-    echo ">> Ark 极速可执行程序部署完成！"
-  uninstall: "node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
-
+    echo ">> Ark 部署完成！"
+  uninstall: node -e "try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}"
 env_schema:
-  - key: "ARK_BACKUP_DIR"
-    label: "工作区源路径 (ARK_BACKUP_DIR)"
-    type: "normal"
-    tag: "{tag}"
-    required: true
-    description: "需要备份与同步的工作区根目录路径（如 /root/workspace）"
-    placeholder: "/root/workspace"
-  - key: "ARK_SEAL_KEY"
-    label: "AES-256 封条加密口令"
-    type: "secret"
-    tag: "{tag}"
-    required: false
-    description: "端到端 AES-256-CBC 封条自定义加密口令"
-    placeholder: "YourSecretKey"
-  - key: "ARK_REGISTRY_TYPE"
-    label: "目标注册表通道 (ali/gh/both)"
-    type: "normal"
-    tag: "{tag}"
-    required: false
-    default: "gh"
-    description: "远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)"
-    placeholder: "gh"
-  - key: "ARK_REPOSITORY"
-    label: "目标镜像仓库路径"
-    type: "normal"
-    tag: "{tag}"
-    required: false
-    description: "目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）"
-    placeholder: "ghcr.io/duorameng/ark"
-
+- key: ARK_BACKUP_DIR
+  label: 工作区源路径 (ARK_BACKUP_DIR)
+  type: normal
+  tag: '{tag}'
+  required: true
+  description: 需要备份与同步的工作区根目录路径（如 /root/workspace）
+  placeholder: /root/workspace
+- key: ARK_SEAL_KEY
+  label: AES-256 封条加密口令
+  type: secret
+  tag: '{tag}'
+  required: false
+  description: 端到端 AES-256-CBC 封条自定义加密口令
+  placeholder: YourSecretKey
+- key: ARK_REGISTRY_TYPE
+  label: 目标注册表通道 (ali/gh/both)
+  type: normal
+  tag: '{tag}'
+  required: false
+  default: gh
+  description: '远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)'
+  placeholder: gh
+- key: ARK_REPOSITORY
+  label: 目标镜像仓库路径
+  type: normal
+  tag: '{tag}'
+  required: false
+  description: 目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）
+  placeholder: ghcr.io/duorameng/ark
 tasks:
-  - id: "ark_check"
-    name: "环境与密钥就绪自检"
-    source: "main"
-    command: "{app_dir}/bin/ark check"
-    default_cron: "0 0 8 * * *"
-    enabled: true
-    remark: "自检权限、配置、密钥加密与网络连通闭环"
-  - id: "ark_board"
-    name: "每日增量快照打包登船交付"
-    source: "main"
-    command: "{app_dir}/bin/ark board --day --auto-scan"
-    default_cron: "0 0 2 * * *"
-    enabled: true
-    remark: "全自动探测变更，按天打标并分层增量推送至云端注册表"
-  - id: "ark_dry"
-    name: "模拟演练与全量校验 (Dry Run)"
-    source: "main"
-    command: "{app_dir}/bin/ark dry"
-    default_cron: "0 0 12 * * *"
-    enabled: false
-    remark: "模拟分层打包与冷热度排序验证，不产生真实网络推流"
-
+- id: ark_check
+  name: 环境与密钥就绪自检
+  source: main
+  command: '{app_dir}/bin/ark check'
+  default_cron: 0 0 8 * * *
+  enabled: true
+  remark: 自检权限、配置、密钥加密与网络连通闭环
+- id: ark_board
+  name: 每日增量快照打包登船交付
+  source: main
+  command: '{app_dir}/bin/ark board --day --auto-scan'
+  default_cron: 0 0 2 * * *
+  enabled: true
+  remark: 全自动探测变更，按天打标并分层增量推送至云端注册表
+- id: ark_dry
+  name: 模拟演练与全量校验 (Dry Run)
+  source: main
+  command: '{app_dir}/bin/ark dry'
+  default_cron: 0 0 12 * * *
+  enabled: false
+  remark: 模拟分层打包与冷热度排序验证，不产生真实网络推流
 scenarios:
-  - id: "standard"
-    name: "标准自动打包备份模式"
-    description: "启用每日定时快照登船交付与环境健康度自检"
-    default: true
-    task_presets:
-      ark_check:
-        enabled: true
-      ark_board:
-        enabled: true
-      ark_dry:
-        enabled: false
-  - id: "minimal"
-    name: "仅环境自检模式"
-    description: "仅保留基础状态检测，挂起定时打包"
-    default: false
-    task_presets:
-      ark_check:
-        enabled: true
-      ark_board:
-        enabled: false
-      ark_dry:
-        enabled: false
+- id: standard
+  name: 标准自动打包备份模式
+  description: 启用每日定时快照登船交付与环境健康度自检
+  default: true
+  task_presets:
+    ark_check:
+      enabled: true
+    ark_board:
+      enabled: true
+    ark_dry:
+      enabled: false
+- id: minimal
+  name: 仅环境自检模式
+  description: 仅保留基础状态检测，挂起定时打包
+  default: false
+  task_presets:
+    ark_check:
+      enabled: true
+    ark_board:
+      enabled: false
+    ark_dry:
+      enabled: false

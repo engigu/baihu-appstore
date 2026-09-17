@@ -57,44 +57,62 @@ def main():
         ],
 
         "setup": {
-            "check": "{app_dir}/bin/ark --version",
+            "check": "node -e \"const fs=require('fs');process.exit(fs.existsSync('{app_dir}/bin/ark')||fs.existsSync('{app_dir}/bin/ark.exe')?0:1)\"",
             "install": (
-                "echo \">> 正在根据当前系统架构探活并释放 Ark 极速单二进制程序...\"\n"
-                "mkdir -p \"{app_dir}/bin\"\n"
-                "if [ \"$(uname -s)\" = \"Darwin\" ]; then\n"
-                "echo \">> 正在自动准备跨平台 Ark 单二进制程序 (Linux / macOS / Windows)...\"\n"
+                "echo \">> 正在从 GitHub Release 下载 Ark 预编译二进制程序...\"\n"
                 "node -e \"\n"
                 "  const fs = require('fs');\n"
                 "  const path = require('path');\n"
                 "  const binDir = path.join('{app_dir}', 'bin');\n"
-                "  const mainDir = path.join('{app_dir}', 'main');\n"
                 "  if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });\n\n"
                 "  const isWin = process.platform === 'win32';\n"
                 "  const targetName = isWin ? 'ark.exe' : 'ark';\n"
-                "  const targetPath = path.join(binDir, targetName);\n\n"
-                "  const candidatePaths = [\n"
-                "    path.join(mainDir, isWin ? 'ark.exe' : 'ark'),\n"
-                "    path.join(mainDir, isWin ? 'ark' : 'ark.exe')\n"
+                "  const targetPath = path.join(binDir, targetName);\n"
+                "  const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');\n"
+                "  const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;\n"
+                "  const mirrors = [\n"
+                "    'https://ghproxy.net/' + rawUrl,\n"
+                "    'https://mirror.ghproxy.com/' + rawUrl,\n"
+                "    'https://ghfast.top/' + rawUrl,\n"
+                "    'https://ghproxy.com/' + rawUrl,\n"
+                "    rawUrl\n"
                 "  ];\n\n"
-                "  let copied = false;\n"
-                "  for (const p of candidatePaths) {\n"
-                "    if (fs.existsSync(p)) {\n"
-                "      fs.copyFileSync(p, targetPath);\n"
-                "      copied = true;\n"
-                "      console.log('>> 已从源码库直接提取并装配程序:', targetName);\n"
-                "      break;\n"
+                "  const tryDownload = (index) => {\n"
+                "    if (index >= mirrors.length) {\n"
+                "      console.error('>> [错误] 所有加速源均下载失败，请检查网络连通性');\n"
+                "      process.exit(1);\n"
                 "    }\n"
-                "  }\n\n"
-                "  if (!copied && isWin) {\n"
-                "    try {\n"
-                "      require('child_process').execSync('go build -ldflags=\\\"-s -w\\\" -o ' + targetPath, { cwd: mainDir });\n"
-                "      console.log('>> 已自动完成本地程序装配');\n"
-                "      copied = true;\n"
-                "    } catch(e){}\n"
-                "  }\n"
-                "  try { if (!isWin && fs.existsSync(targetPath)) fs.chmodSync(targetPath, 0o755); } catch(e){}\n"
+                "    const currentUrl = mirrors[index];\n"
+                "    const fetchUrl = (url) => {\n"
+                "      const client = url.startsWith('https') ? require('https') : require('http');\n"
+                "      const file = fs.createWriteStream(targetPath);\n"
+                "      const req = client.get(url, (res) => {\n"
+                "        if (res.statusCode === 301 || res.statusCode === 302) {\n"
+                "          fetchUrl(res.headers.location);\n"
+                "        } else if (res.statusCode === 200) {\n"
+                "          res.pipe(file);\n"
+                "          file.on('finish', () => {\n"
+                "            file.close();\n"
+                "            if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }\n"
+                "            console.log('>> Ark Release 二进制下载就绪:', targetName);\n"
+                "          });\n"
+                "        } else {\n"
+                "          file.close();\n"
+                "          try { fs.unlinkSync(targetPath); } catch(e){}\n"
+                "          tryDownload(index + 1);\n"
+                "        }\n"
+                "      });\n"
+                "      req.on('error', () => {\n"
+                "        file.close();\n"
+                "        try { fs.unlinkSync(targetPath); } catch(e){}\n"
+                "        tryDownload(index + 1);\n"
+                "      });\n"
+                "    };\n"
+                "    fetchUrl(currentUrl);\n"
+                "  };\n"
+                "  tryDownload(0);\n"
                 "\"\n"
-                "echo \">> Ark 极速可执行程序部署完成！\""
+                "echo \">> Ark 部署完成！\""
             ),
             "uninstall": "node -e \"try{require('fs').rmSync('{app_dir}/bin',{recursive:true,force:true})}catch(e){}\""
         },
@@ -105,7 +123,7 @@ def main():
                 "label": "工作区源路径 (ARK_BACKUP_DIR)",
                 "type": "normal",
                 "tag": "{tag}",
-                "required": true,
+                "required": True,
                 "description": "需要备份与同步的工作区根目录路径（如 /root/workspace）",
                 "placeholder": "/root/workspace"
             },
@@ -114,7 +132,7 @@ def main():
                 "label": "AES-256 封条加密口令",
                 "type": "secret",
                 "tag": "{tag}",
-                "required": false,
+                "required": False,
                 "description": "端到端 AES-256-CBC 封条自定义加密口令",
                 "placeholder": "YourSecretKey"
             },
@@ -123,7 +141,7 @@ def main():
                 "label": "目标注册表通道 (ali/gh/both)",
                 "type": "normal",
                 "tag": "{tag}",
-                "required": false,
+                "required": False,
                 "default": "gh",
                 "description": "远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)",
                 "placeholder": "gh"
@@ -133,7 +151,7 @@ def main():
                 "label": "目标镜像仓库路径",
                 "type": "normal",
                 "tag": "{tag}",
-                "required": false,
+                "required": False,
                 "description": "目标 OCI 镜像仓库全路径（如 ghcr.io/duorameng/ark）",
                 "placeholder": "ghcr.io/duorameng/ark"
             }
