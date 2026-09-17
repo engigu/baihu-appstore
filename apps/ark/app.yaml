@@ -26,7 +26,7 @@ sources:
   source_type: 'null'
 setup:
   check: mise exec {mise_languages} -- node -e "const fs=require('fs');const d=process.env.APP_DIR||process.cwd();process.exit(fs.existsSync(require('path').join(d,'bin','ark'))||fs.existsSync(require('path').join(d,'bin','ark.exe'))?0:1)"
-  install: |-
+  install: |
     echo ">> 正在从 GitHub Release 下载 Ark 预编译二进制程序..."
     mise exec {mise_languages} -- node -e "
       const fs = require('fs');
@@ -40,10 +40,13 @@ setup:
       const targetPath = path.join(binDir, targetName);
       const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');
       const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;
+      
       const mirrors = [
+        'https://ghp.ci/' + rawUrl,
+        'https://gh-proxy.com/' + rawUrl,
         'https://ghproxy.net/' + rawUrl,
-        'https://mirror.ghproxy.com/' + rawUrl,
         'https://ghfast.top/' + rawUrl,
+        'https://mirror.ghproxy.com/' + rawUrl,
         'https://ghproxy.com/' + rawUrl,
         rawUrl
       ];
@@ -54,9 +57,20 @@ setup:
           process.exit(1);
         }
         const currentUrl = mirrors[index];
+        console.log('>> 尝试镜像节点 (' + (index + 1) + '/' + mirrors.length + '): ' + currentUrl);
+        
+        let isHandled = false;
+        const next = () => {
+          if (isHandled) return;
+          isHandled = true;
+          try { fs.unlinkSync(targetPath); } catch(e){}
+          tryDownload(index + 1);
+        };
+
         const fetchUrl = (reqUrl) => {
           const client = reqUrl.startsWith('https') ? require('https') : require('http');
           const file = fs.createWriteStream(targetPath);
+          
           const req = client.get(reqUrl, (res) => {
             if (res.statusCode === 301 || res.statusCode === 302) {
               file.close();
@@ -71,14 +85,21 @@ setup:
               });
             } else {
               file.close();
-              try { fs.unlinkSync(targetPath); } catch(e){}
-              tryDownload(index + 1);
+              next();
             }
           });
+
+          // 设置 10 秒超时中断熔断机制
+          req.setTimeout(10000, () => {
+            console.warn('>> [超时] 当前加速节点响应卡顿，自动切换下一个镜像源...');
+            req.destroy();
+            file.close();
+            next();
+          });
+
           req.on('error', () => {
             file.close();
-            try { fs.unlinkSync(targetPath); } catch(e){}
-            tryDownload(index + 1);
+            next();
           });
         };
         fetchUrl(currentUrl);
