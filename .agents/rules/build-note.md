@@ -26,6 +26,8 @@ trigger: always_on
   - `force_setup`：布尔值，是否默认强制重新编译（跳过 check 探活，强行执行 setup.install，默认 `false`）。
   - `skip_setup`：布尔值，是否默认跳过环境与依赖安装（完全跳过 setup 阶段，默认 `false`）。
   - `skip_sync`：布尔值，是否默认跳过代码源同步（使用本地已有代码，默认 `false`）。
+  - `overwrite_env`：布尔值，是否默认覆盖已有同名环境变量（默认 `false`）。
+  - `overwrite_task`：布尔值，是否默认覆盖和插入受控任务（默认 `true`）。
 - **`schedule` / `schedule_opts`**（可选）：应用主任务 (Master Task) 的默认定时规则与调度策略预设（安装界面默认填充，亦可不填）：
   - `schedule`：字符串，默认 Cron 定时表达式（6 位秒级标准 Cron，如 `0 0 8 * * *`）。
   - `schedule_opts`：对象结构，完整覆盖主任务调度策略：

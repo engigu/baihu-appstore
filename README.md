@@ -70,9 +70,11 @@ homepage: "https://github.com/..."    # 开源项目主页
 # ------------------------------------------------------------------------------
 # 预配置应用部署与构建行为的默认开关（用户在面板安装界面仍可自由临时勾选覆盖）
 build_opts:
-  force_setup: false                  # 强制重新编译 (Rebuild)：跳过探活断言，强行重新执行 setup.install
+  force_setup: false                  # 强制重新构建 (Force Setup)：跳过探活断言，强行重新执行 setup.install
   skip_setup: false                   # 跳过环境与依赖安装：完全跳过 setup 阶段，仅同步环境变量与任务
   skip_sync: false                    # 跳过代码源同步：使用本地已有代码，不重新拉取 Git/URL 源码
+  overwrite_env: false                # 覆盖已有同名环境变量：部署时是否覆盖已有的环境变量（默认 false）
+  overwrite_task: true                # 覆盖并同步受控任务：是否覆盖和插入受控子任务（默认 true）
 
 # ------------------------------------------------------------------------------
 # 0.1 应用主任务调度规则与策略预设 (Schedule / Schedule Opts，可选)
