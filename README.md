@@ -232,6 +232,15 @@ scenarios:
       lottery_task:
         enabled: true
         cron: "0 */10 * * * *"
+
+# ------------------------------------------------------------------------------
+# 8. 节点物理顺序与扩展规则 (Key Order Rules)
+# ------------------------------------------------------------------------------
+# 在编写或由白虎面板序列化写回 app.yaml 时，根节点物理出现顺序固定如下：
+# 1. spec_version  2. id  3. name  4. version  5. author  6. category  7. last_commit
+# 8. template  9. description  10. icon  11. homepage  12. build_opts  13. schedule_opts
+# 14. sources  15. setup  16. env_schema  17. tasks  18. scenarios
+# 未知新增拓展 Key：在反序列化写回时自动按原有相对位置在上述 18 个标准节点之后顺延。
 ```
 
 ---

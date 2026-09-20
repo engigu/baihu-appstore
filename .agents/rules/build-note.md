@@ -171,5 +171,29 @@ trigger: always_on
 3. **构建执行规则（重要）**：
    - **严禁在本地手动执行 `build.py`**；
    - 所有的构建、生成与全量索引统一交由 GitHub Actions (CI/CD) 在远端流水线中自动化触发与完成。
-4. 每次新增yml的定义规范和概念的时候，需要更新readme和这个rule的规则。
+## 九、 节点物理顺序与扩展规则 (Key Order Rules)
+
+在编写、解析、生成或序列化 `app.yaml` 文本时，根节点的物理出现顺序必须严格遵循白虎规范 v1 的固定优先级规则（从前至后依次为）：
+
+1. `spec_version`
+2. `id`
+3. `name`
+4. `version`
+5. `author`
+6. `category`
+7. `last_commit`
+8. `template`
+9. `description`
+10. `icon`
+11. `homepage`
+12. `build_opts`
+13. `schedule_opts`
+14. `sources`
+15. `setup`
+16. `env_schema`
+17. `tasks`
+18. `scenarios`
+
+**未知拓展 Key 处理**：如果应用后续增加了规范之外的新拓展字段，在反序列化与写回格式化时，所有未定义的拓展 Key 自动按其物理出现顺序排列在上述 18 个标准节点之后。
+
 
