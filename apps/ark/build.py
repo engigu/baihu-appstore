@@ -189,7 +189,7 @@ def main():
                 "name": "环境与密钥就绪自检",
                 "source": "main",
                 "tag": "{tag}",
-                "command": "{app_dir}/bin/ark check",
+                "command": "bin/ark check",
                 "default_cron": "0 0 8 * * *",
                 "enabled": True,
                 "remark": "自检权限、配置、密钥加密与网络连通闭环"
@@ -199,7 +199,7 @@ def main():
                 "name": "每日增量快照打包登船交付",
                 "source": "main",
                 "tag": "{tag}",
-                "command": "{app_dir}/bin/ark board --day --auto-scan",
+                "command": "bin/ark board --day --auto-scan",
                 "default_cron": "0 0 2 * * *",
                 "enabled": True,
                 "remark": "全自动探测变更，按天打标并分层增量推送至云端注册表"
@@ -209,7 +209,7 @@ def main():
                 "name": "模拟演练与全量校验 (Dry Run)",
                 "source": "main",
                 "tag": "{tag}",
-                "command": "{app_dir}/bin/ark dry",
+                "command": "bin/ark dry",
                 "default_cron": "0 0 12 * * *",
                 "enabled": False,
                 "remark": "模拟分层打包与冷热度排序验证，不产生真实网络推流"
