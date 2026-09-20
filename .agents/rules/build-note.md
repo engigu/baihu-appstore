@@ -126,16 +126,17 @@ trigger: always_on
   - **`id`**（必填）：子任务内部 ID。
   - **`name`**（必填）：子任务中文显示名称。
   - **`source`**（必填）：关联的 `sources` 中的源 ID（通常为 `main`）。
-  - **`command`**（必填）：具体执行的纯原生 CLI 命令（如 `dotnet Ray.BiliBiliTool.Console.dll` 或 `node main/jd_CheckCK.js`；**坚决不写 `mise exec` 前缀**，多语言外壳由白虎面板自动动态包裹）。
+  - **`command`**（必填）：具体执行的纯原生 CLI 命令（如 `dotnet Ray.BiliBiliTool.Console.dll` 或 `node main/jd_CheckCK.js`；**坚决不写 `mise exec` 前缀与磁盘绝对路径**，多语言外壳与路径解析由白虎面板自动动态包裹）。
   - **`default_cron`**（必填）：默认 Cron 定时表达式（6 位或 5 位标准 Cron）。
   - **`enabled`**（必填）：默认是否启用（`true` / `false`）。
+  - **`work_dir`**（可选）：单个子任务独立覆盖的工作目录（若未配置则优先继承 `sync_rules.defaults.work_dir`；若均未指定，白虎面板自动默认回退为应用根目录 `{app_dir}`）。
   - **`tag`**（可选）：关联标签，推荐统一填 `"{tag}"`（继承 `template` 中的大驼峰 Tag）；若任务显式配置了专属 Tag，则以各自定义配置为准。
   - **`remark`**：任务功能备注与执行说明。
 - **`sync_rules.defaults`**（可选）：
   - `timeout`：默认执行超时时间（单位：分钟）。
   - `retry_count`：失败自动重试次数。
   - `retry_interval`：重试间隔（秒）。
-  - `work_dir`：任务运行工作目录。
+  - `work_dir`：全局默认任务运行工作目录（支持使用动态宏占位符，例如 `"{app_dir}/bin"` 或 `"{app_dir}/main"`。白虎面板在安装时会自动转换为内部的占位符逻辑路径 `$SCRIPTS_DIR$/apps/...` 存库，绝不保留盘符与物理绝对路径。留空则自动回退为应用根目录 `{app_dir}`）。
   - `language`：锁定运行时语言（如 `"{mise_languages}"`）。
 
 ---

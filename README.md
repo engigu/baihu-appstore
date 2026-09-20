@@ -186,7 +186,7 @@ sync_rules:
     timeout: 15                       # 默认超时时间 (分钟)
     retry_count: 1                    # 失败重试次数
     retry_interval: 10                # 重试间隔 (秒)
-    work_dir: "{app_dir}/main"        # 任务运行时工作目录
+    work_dir: "{app_dir}/main"        # 任务运行时工作目录 (支持 {app_dir} 占位符，严禁写绝对路径，留空默认根目录)
     language: "{mise_languages}"      # 锁定运行时环境
 
   tasks:
