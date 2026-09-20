@@ -111,7 +111,7 @@ jobs:
           echo "=================================================="
           echo ">> 正在对应用进行矩阵并行硬核部署测试: ${{ matrix.app }}"
           echo "=================================================="
-          ./baihu app apply "${{ matrix.app }}" --rebuild
+          ./baihu app apply "${{ matrix.app }}" --force-setup
 
   # 步骤 3: 校验全部通过后，构建索引、提交代码并部署 Pages
   build:
