@@ -155,6 +155,12 @@ def main():
     fail_count = 0
     apps_index = []
 
+    # 计算东八区 (UTC+8) 构建时间
+    from datetime import datetime, timezone, timedelta
+    tz_utc8 = timezone(timedelta(hours=8))
+    now_utc8 = datetime.now(tz_utc8)
+    build_time_utc8 = now_utc8.strftime("%Y-%m-%d %H:%M:%S")
+
     # 1. 执行全部构建
     for app_dir in app_dirs:
         ok = build_app(app_dir, args.proxy)
@@ -180,13 +186,15 @@ def main():
                 raw_text = ""
             meta["manifest_raw"] = raw_text
             meta["manifest_url"] = f"https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/{app_dir.name}/{target_yaml.name}"
-            meta["updated_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+            meta["updated_at"] = build_time_utc8
             apps_index.append(meta)
 
     # 3. 聚合输出 apps.json 全局索引
     index_data = {
         "version": "v1",
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "generated_at_utc8": build_time_utc8,
+        "build_time": build_time_utc8,
         "total_apps": len(apps_index),
         "apps": apps_index,
     }
