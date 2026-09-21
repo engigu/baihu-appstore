@@ -246,17 +246,15 @@ def main():
 
         "setup": {
             "check": "mise exec {mise_languages} -- node -e \"if (!process.version.startsWith('v23')) process.exit(1)\"",
-            "install": (
-                "mise install {mise_languages}\n"
-                "echo \">> 正在为 JDPro 设置 registry 镜像并清理旧 lockfile...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm config set registry https://registry.npmmirror.com/\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- node -e \"try{require('fs').unlinkSync('package-lock.json')}catch(e){}\"\n"
-                "echo \">> 正在安装 JDPro 基础 Node.js 依赖...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- npm install got@11.8.6 ds@2.0.2 png-js@1.0.0 date-fns@3.6.0 axios@1.7.4 crypto-js@4.2.0 request@2.88.2 jsdom@24.1.1 moment@2.30.1 cheerio@1.0.0 https-proxy-agent@7.0.5 tough-cookie tunnel dotenv qrcode-terminal tslib typescript --legacy-peer-deps --no-audit --no-fund --omit=dev\n"
-                "echo \">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)...\"\n"
-                "cd \"{app_dir}/main\" && mise exec {mise_languages} -- node jd_indeps.js\n"
-                "echo \">> JDPro 依赖就绪！\""
-            ),
+            "install": """mise install {mise_languages}
+echo ">> 正在为 JDPro 设置 registry 镜像并清理旧 lockfile..."
+cd "{app_dir}/main" && mise exec {mise_languages} -- npm config set registry https://registry.npmmirror.com/
+cd "{app_dir}/main" && mise exec {mise_languages} -- node -e "try{require('fs').unlinkSync('package-lock.json')}catch(e){}"
+echo ">> 正在安装 JDPro 基础 Node.js 依赖..."
+cd "{app_dir}/main" && mise exec {mise_languages} -- npm install got@11.8.6 ds@2.0.2 png-js@1.0.0 date-fns@3.6.0 axios@1.7.4 crypto-js@4.2.0 request@2.88.2 jsdom@24.1.1 moment@2.30.1 cheerio@1.0.0 https-proxy-agent@7.0.5 tough-cookie tunnel dotenv qrcode-terminal tslib typescript --legacy-peer-deps --no-audit --no-fund --omit=dev
+echo ">> 正在执行 JDPro 依赖补全脚本 (jd_indeps.js)..."
+cd "{app_dir}/main" && mise exec {mise_languages} -- node jd_indeps.js
+echo ">> JDPro 依赖就绪！\"""",
             "uninstall": "mise exec {mise_languages} -- node -e \"try{require('fs').rmSync('{app_dir}/main/node_modules',{recursive:true,force:true})}catch(e){}\""
         },
 

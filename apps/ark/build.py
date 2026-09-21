@@ -64,79 +64,79 @@ def main():
 
         "setup": {
             "check": "mise exec {mise_languages} -- node -e \"const fs=require('fs');const d=process.env.APP_DIR||process.cwd();process.exit(fs.existsSync(require('path').join(d,'bin','ark'))||fs.existsSync(require('path').join(d,'bin','ark.exe'))?0:1)\"",
-            "install": (
-                "echo \">> 正在从 GitHub Release 下载 Ark 预编译二进制程序...\"\n"
-                "mise exec {mise_languages} -- node -e \"\n"
-                "  const fs = require('fs');\n"
-                "  const path = require('path');\n"
-                "  const appDir = process.env.APP_DIR || process.cwd();\n"
-                "  const binDir = path.join(appDir, 'bin');\n"
-                "  if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });\n\n"
-                "  const isWin = process.platform === 'win32';\n"
-                "  const targetName = isWin ? 'ark.exe' : 'ark';\n"
-                "  const targetPath = path.join(binDir, targetName);\n"
-                "  const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');\n"
-                "  const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;\n"
-                "  const mirrors = [\n"
-                "    'https://ghp.ci/' + rawUrl,\n"
-                "    'https://gh-proxy.com/' + rawUrl,\n"
-                "    'https://ghproxy.net/' + rawUrl,\n"
-                "    'https://ghfast.top/' + rawUrl,\n"
-                "    'https://mirror.ghproxy.com/' + rawUrl,\n"
-                "    'https://ghproxy.com/' + rawUrl,\n"
-                "    rawUrl\n"
-                "  ];\n\n"
-                "  const tryDownload = (index) => {\n"
-                "    if (index >= mirrors.length) {\n"
-                "      console.error('>> [错误] 所有加速源均下载失败，请检查网络连通性');\n"
-                "      process.exit(1);\n"
-                "    }\n"
-                "    const currentUrl = mirrors[index];\n"
-                "    console.log('>> 尝试镜像节点 (' + (index + 1) + '/' + mirrors.length + '): ' + currentUrl);\n"
-                "    let isHandled = false;\n"
-                "    const next = () => {\n"
-                "      if (isHandled) return;\n"
-                "      isHandled = true;\n"
-                "      try { fs.unlinkSync(targetPath); } catch(e){}\n"
-                "      tryDownload(index + 1);\n"
-                "    };\n"
-                "    const fetchUrl = (reqUrl) => {\n"
-                "      const client = reqUrl.startsWith('https') ? require('https') : require('http');\n"
-                "      const file = fs.createWriteStream(targetPath);\n"
-                "      const req = client.get(reqUrl, (res) => {\n"
-                "        if (res.statusCode === 301 || res.statusCode === 302) {\n"
-                "          file.close();\n"
-                "          const redirectUrl = new URL(res.headers.location, reqUrl).href;\n"
-                "          fetchUrl(redirectUrl);\n"
-                "        } else if (res.statusCode === 200) {\n"
-                "          res.pipe(file);\n"
-                "          file.on('finish', () => {\n"
-                "            file.close();\n"
-                "            if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }\n"
-                "            console.log('>> Ark Release 二进制下载就绪:', targetName);\n"
-                "          });\n"
-                "        } else {\n"
-                "          file.close();\n"
-                "          next();\n"
-                "        }\n"
-                "      });\n"
-                "      req.setTimeout(10000, () => {\n"
-                "        console.warn('>> [超时] 当前加速节点响应卡顿，自动切换下一个镜像源...');\n"
-                "        req.destroy();\n"
-                "        file.close();\n"
-                "        next();\n"
-                "      });\n"
-                "      req.on('error', () => {\n"
-                "        file.close();\n"
-                "        next();\n"
-                "      });\n"
-                "    };\n"
-                "    fetchUrl(currentUrl);\n"
-                "  };\n"
-                "  tryDownload(0);\n"
-                "\"\n"
-                "echo \">> Ark 部署完成！\""
-            ),
+            "install": """echo ">> 正在从 GitHub Release 下载 Ark 预编译二进制程序..."
+mise exec {mise_languages} -- node -e "
+  const fs = require('fs');
+  const path = require('path');
+  const appDir = process.env.APP_DIR || process.cwd();
+  const binDir = path.join(appDir, 'bin');
+  if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
+
+  const isWin = process.platform === 'win32';
+  const targetName = isWin ? 'ark.exe' : 'ark';
+  const targetPath = path.join(binDir, targetName);
+  const platformTag = isWin ? 'windows-amd64.exe' : (process.platform === 'darwin' ? 'darwin-amd64' : 'linux-amd64');
+  const rawUrl = 'https://github.com/duorameng/ark/releases/latest/download/ark-' + platformTag;
+  const mirrors = [
+    'https://ghp.ci/' + rawUrl,
+    'https://gh-proxy.com/' + rawUrl,
+    'https://ghproxy.net/' + rawUrl,
+    'https://ghfast.top/' + rawUrl,
+    'https://mirror.ghproxy.com/' + rawUrl,
+    'https://ghproxy.com/' + rawUrl,
+    rawUrl
+  ];
+
+  const tryDownload = (index) => {
+    if (index >= mirrors.length) {
+      console.error('>> [错误] 所有加速源均下载失败，请检查网络连通性');
+      process.exit(1);
+    }
+    const currentUrl = mirrors[index];
+    console.log('>> 尝试镜像节点 (' + (index + 1) + '/' + mirrors.length + '): ' + currentUrl);
+    let isHandled = false;
+    const next = () => {
+      if (isHandled) return;
+      isHandled = true;
+      try { fs.unlinkSync(targetPath); } catch(e){}
+      tryDownload(index + 1);
+    };
+    const fetchUrl = (reqUrl) => {
+      const client = reqUrl.startsWith('https') ? require('https') : require('http');
+      const file = fs.createWriteStream(targetPath);
+      const req = client.get(reqUrl, (res) => {
+        if (res.statusCode === 301 || res.statusCode === 302) {
+          file.close();
+          const redirectUrl = new URL(res.headers.location, reqUrl).href;
+          fetchUrl(redirectUrl);
+        } else if (res.statusCode === 200) {
+          res.pipe(file);
+          file.on('finish', () => {
+            file.close();
+            if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }
+            console.log('>> Ark Release 二进制下载就绪:', targetName);
+          });
+        } else {
+          file.close();
+          next();
+        }
+      });
+      req.setTimeout(10000, () => {
+        console.warn('>> [超时] 当前加速节点响应卡顿，自动切换下一个镜像源...');
+        req.destroy();
+        file.close();
+        next();
+      });
+      req.on('error', () => {
+        file.close();
+        next();
+      });
+    };
+    fetchUrl(currentUrl);
+  };
+  tryDownload(0);
+"
+echo ">> Ark 部署完成！\"""",
             "uninstall": "mise exec {mise_languages} -- node -e \"const p=require('path');const d=process.env.APP_DIR||process.cwd();try{require('fs').rmSync(p.join(d,'bin'),{recursive:true,force:true})}catch(e){}\""
         },
 
