@@ -110,7 +110,7 @@ trigger: always_on
   - `boolean`：开关 Switch 控件。
   - `select`：下拉单选框（需提供 `options` 列表，包含 `label` 与 `value`）。
   - `number`：数字输入框。
-- **`tag`**：绑定的应用标签。推荐统一填写 `"{tag}"`（解析继承 `template` 中的大驼峰 Tag）；若项显式配置了自定义 Tag，则以各自定义配置为准。
+- **`tag`**：统一继承使用 `template.tag` 绑定的应用标签（不再支持子项单独覆盖，由面板全局强约束与动态绑定）。
 - **`required`**：是否必填（`true` / `false`）。
 - **`default`**：默认缺省值。
 - **`description`**：字段用法说明与提示。
@@ -130,7 +130,7 @@ trigger: always_on
   - **`default_cron`**（必填）：默认 Cron 定时表达式（6 位或 5 位标准 Cron）。
   - **`enabled`**（必填）：默认是否启用（`true` / `false`）。
   - **`work_dir`**（可选）：单个子任务独立覆盖的工作目录（若未配置则优先继承 `sync_rules.defaults.work_dir`；若均未指定，白虎面板自动默认回退为应用根目录 `{app_dir}`）。
-  - **`tag`**（可选）：关联标签，推荐统一填 `"{tag}"`（继承 `template` 中的大驼峰 Tag）；若任务显式配置了专属 Tag，则以各自定义配置为准。
+  - **`tag`**（可选）：统一继承使用 `template.tag` 标签。
   - **`remark`**：任务功能备注与执行说明。
 - **`sync_rules.defaults`**（可选）：
   - `timeout`：默认执行超时时间（单位：分钟）。

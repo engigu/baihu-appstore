@@ -69,7 +69,6 @@ env_schema:
   - key: "BILI_COOKIE"
     label: "账号凭证 (Cookie)"
     type: "secret"                    # 类型: string / secret / number / boolean / select
-    tag: "bilibili-assistant"                   # [可选] 分组标签/分类显示
     required: true
     description: "登录 bilibili.com 后在控制台获取包含 SESSDATA 与 bili_jct 的 Cookie 字符串"
     placeholder: "SESSDATA=xxxx; bili_jct=yyyy;"
@@ -77,7 +76,6 @@ env_schema:
   - key: "COIN_NUM"
     label: "每日投币数量"
     type: "select"
-    tag: "bilibili-assistant"
     required: false
     default: "5"
     options:
@@ -91,7 +89,6 @@ env_schema:
   - key: "AUTO_SILVER_TO_COIN"
     label: "自动银瓜子兑硬币"
     type: "boolean"
-    tag: "bilibili-assistant"
     default: true
     description: "每日 0点 自动将多余的直播间银瓜子兑换为硬币"
 

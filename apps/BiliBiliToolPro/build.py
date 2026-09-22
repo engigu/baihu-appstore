@@ -202,14 +202,12 @@ def get_repo_last_commit_time(repo_dir: Path) -> str:
 
 def generate_app_yaml(tasks, last_commit=""):
     """把提取出来的 tasks 列表融合填充进规范的标准 YAML 模板"""
-    tag = "{tag}"
     mise_languages = "{mise_languages}"
     tasks_yaml_lines = []
     for t in tasks:
         tasks_yaml_lines.append(f'    - id: "{t["id"]}"')
         tasks_yaml_lines.append(f'      name: "{t["name"]}"')
         tasks_yaml_lines.append('      source: "main"                  # 关联代码源 ID')
-        tasks_yaml_lines.append('      tag: "{tag}"')
         tasks_yaml_lines.append('      language: "{mise_languages}"            # 运行时锁定 {mise_languages}')
         tasks_yaml_lines.append(f'      command: "{t["command"]}"')
         tasks_yaml_lines.append(f'      default_cron: "{t["cron"]}"')
@@ -322,7 +320,6 @@ env_schema:
   - key: "Ray_BiliBiliCookies__0"
     label: "主账号凭证 (Cookie)"
     type: "secret"
-    tag: "{tag}"
     required: true
     description: "登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）"
     placeholder: "SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;"
@@ -330,14 +327,12 @@ env_schema:
   - key: "Ray_BiliBiliCookies__1"
     label: "账号 2 凭证 (多账号可选)"
     type: "secret"
-    tag: "{tag}"
     required: false
     description: "多账号模式：第二个账号的 Cookie 字符串"
 
   - key: "Ray_DailyTaskConfig__NumberOfCoins"
     label: "每日投币数量"
     type: "select"
-    tag: "{tag}"
     required: false
     default: "5"
     options:
@@ -351,21 +346,18 @@ env_schema:
   - key: "Ray_DailyTaskConfig__SelectLike"
     label: "投币同时点赞"
     type: "boolean"
-    tag: "{tag}"
     default: true
     description: "投币成功后是否同时点赞视频"
 
   - key: "Ray_LiveLotteryTaskConfig__AutoSendDanmu"
     label: "天选抽奖自动发弹幕"
     type: "boolean"
-    tag: "{tag}"
     default: true
     description: "遇到弹幕抽奖时是否自动发送所需弹幕"
 
   - key: "BaihuConfig__Token"
     label: "白虎面板 API Token"
     type: "secret"
-    tag: "{tag}"
     required: false
     description: "白虎面板 OpenAPI 访问令牌。配置后运行【扫码登录】任务即可自动持久化 Cookie 回白虎面板！"
     placeholder: "在白虎面板【系统设置】->【OpenAPI】中创建"
@@ -373,7 +365,6 @@ env_schema:
   - key: "BA_URL"
     label: "白虎面板访问地址"
     type: "string"
-    tag: "{tag}"
     required: false
     default: "http://localhost:8052"
     description: "白虎面板的内部或局域网访问地址，用于接收扫码登录成功的 Cookie 回调"
@@ -381,7 +372,6 @@ env_schema:
   - key: "Ray_PlatformType"
     label: "运行平台类型"
     type: "string"
-    tag: "{tag}"
     required: false
     default: "Baihu"
     description: "指定底层运行平台为 Baihu，完全复刻青龙/白虎原生调度行为，实现扫码登录后自动将 Cookie 同步保存回面板"
@@ -389,7 +379,6 @@ env_schema:
   - key: "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
     label: "精简容器兼容模式 (无ICU)"
     type: "boolean"
-    tag: "{tag}"
     default: true
     description: "复刻 bili_task_base.sh 中的全局环境变量，解决跨平台与精简容器中 ICU 异常"
 

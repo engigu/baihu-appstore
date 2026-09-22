@@ -94,7 +94,7 @@ schedule_opts:
 # 声明自定义宏变量，在当前 YAML 的 {tag}、{mise_languages} 等位置原样保留；
 # 白虎面板 (Go 核心解析器) 在运行时会自动解析该节点：
 # 1. tag 必须统一使用大驼峰 (PascalCase) 命名 (例如 "BiliBiliToolPro"、"JDPro"、"Ark")，前端安装界面与统一归集标签将直接回显该 Tag；
-# 2. 每个变量或任务若单独配置 Tag 则以各自定义为准，若为占位符 {tag} 或留空，面板将统一继承 template 中声明的大驼峰 Tag；
+# 2. 所有环境变量与拆解子任务统一自动继承 template 中绑定的 Tag，无需在子项中多余声明；
 # 3. mise_languages 只能使用空格分隔多个环境（严禁使用逗号，例如 "dotnet@8.0.425 node@23"）。
 template:
   - tag: "BiliBiliToolPro"
@@ -152,7 +152,6 @@ env_schema:
   - key: "MY_APP_COOKIE"
     label: "账号 Cookie 凭证"
     type: "secret"                    # 密文输入框 (前端已做防浏览器自动填充处理)
-    tag: "{tag}"                      # 绑定的 Tag 名称
     required: true
     description: "请输入抓包获得的包含 session 的 Cookie 字符串"
     placeholder: "session=xxxx;"
@@ -160,7 +159,6 @@ env_schema:
   - key: "COIN_COUNT"
     label: "每日投币数量"
     type: "select"                    # 下拉选择框
-    tag: "{tag}"
     required: false
     default: "5"
     options:                          # 下拉选项列表
@@ -174,7 +172,6 @@ env_schema:
   - key: "AUTO_LIKE"
     label: "投币同时点赞"
     type: "boolean"                   # 开关 Switch 控件
-    tag: "{tag}"
     default: true
     description: "投币成功后是否同时为视频点赞"
 
@@ -193,7 +190,6 @@ sync_rules:
     - id: "daily_task"
       name: "每日基础签到与任务"
       source: "main"
-      tag: "{tag}"
       language: "{mise_languages}"
       command: "python3 daily.py"
       default_cron: "0 0 9 * * *"
@@ -202,7 +198,6 @@ sync_rules:
     - id: "lottery_task"
       name: "高频巡检抽奖"
       source: "main"
-      tag: "{tag}"
       language: "{mise_languages}"
       command: "python3 lottery.py"
       default_cron: "*/15 * * * *"

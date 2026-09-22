@@ -77,7 +77,6 @@ env_schema:
   - key: "Ray_BiliBiliCookies__0"
     label: "主账号凭证 (Cookie)"
     type: "secret"
-    tag: "{tag}"
     required: true
     description: "登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）"
     placeholder: "SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;"
@@ -85,14 +84,12 @@ env_schema:
   - key: "Ray_BiliBiliCookies__1"
     label: "账号 2 凭证 (多账号可选)"
     type: "secret"
-    tag: "{tag}"
     required: false
     description: "多账号模式：第二个账号的 Cookie 字符串"
 
   - key: "Ray_DailyTaskConfig__NumberOfCoins"
     label: "每日投币数量"
     type: "select"
-    tag: "{tag}"
     required: false
     default: "5"
     options:
@@ -106,21 +103,18 @@ env_schema:
   - key: "Ray_DailyTaskConfig__SelectLike"
     label: "投币同时点赞"
     type: "boolean"
-    tag: "{tag}"
     default: true
     description: "投币成功后是否同时点赞视频"
 
   - key: "Ray_LiveLotteryTaskConfig__AutoSendDanmu"
     label: "天选抽奖自动发弹幕"
     type: "boolean"
-    tag: "{tag}"
     default: true
     description: "遇到弹幕抽奖时是否自动发送所需弹幕"
 
   - key: "BaihuConfig__Token"
     label: "白虎面板 API Token"
     type: "secret"
-    tag: "{tag}"
     required: false
     description: "白虎面板 OpenAPI 访问令牌。配置后运行【扫码登录】任务即可自动持久化 Cookie 回白虎面板！"
     placeholder: "在白虎面板【系统设置】->【OpenAPI】中创建"
@@ -128,7 +122,6 @@ env_schema:
   - key: "BA_URL"
     label: "白虎面板访问地址"
     type: "string"
-    tag: "{tag}"
     required: false
     default: "http://localhost:8052"
     description: "白虎面板的内部或局域网访问地址，用于接收扫码登录成功的 Cookie 回调"
@@ -136,7 +129,6 @@ env_schema:
   - key: "Ray_PlatformType"
     label: "运行平台类型"
     type: "string"
-    tag: "{tag}"
     required: false
     default: "Baihu"
     description: "指定底层运行平台为 Baihu，完全复刻青龙/白虎原生调度行为，实现扫码登录后自动将 Cookie 同步保存回面板"
@@ -144,7 +136,6 @@ env_schema:
   - key: "DOTNET_SYSTEM_GLOBALIZATION_INVARIANT"
     label: "精简容器兼容模式 (无ICU)"
     type: "boolean"
-    tag: "{tag}"
     default: true
     description: "复刻 bili_task_base.sh 中的全局环境变量，解决跨平台与精简容器中 ICU 异常"
 
@@ -165,7 +156,6 @@ sync_rules:
     - id: "charge"
       name: "大会员每月B币券充电"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Charge"
       default_cron: "0 0 12 * * *"
@@ -174,7 +164,6 @@ sync_rules:
     - id: "daily"
       name: "每日基础经验与投币任务"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Daily"
       default_cron: "0 0 9 * * *"
@@ -183,7 +172,6 @@ sync_rules:
     - id: "live_fans_medal"
       name: "直播粉丝牌亲密度打卡"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveFansMedal"
       default_cron: "0 5 0 * * *"
@@ -192,7 +180,6 @@ sync_rules:
     - id: "live_lottery"
       name: "天选时刻高频巡检抽奖"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveLottery"
       default_cron: "0 0 13 * * *"
@@ -201,7 +188,6 @@ sync_rules:
     - id: "login"
       name: "扫码登录 (自动持久化Cookie)"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Login"
       default_cron: "0 0 0 1 1 *"
@@ -210,7 +196,6 @@ sync_rules:
     - id: "manga"
       name: "漫画任务"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Manga"
       default_cron: "0 0 14 * * *"
@@ -219,7 +204,6 @@ sync_rules:
     - id: "manga_privilege"
       name: "大会员漫画权益领取"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=MangaPrivilege"
       default_cron: "0 0 15 * * *"
@@ -228,7 +212,6 @@ sync_rules:
     - id: "silver2_coin"
       name: "直播间银瓜子兑换硬币"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Silver2Coin"
       default_cron: "0 0 8 * * *"
@@ -237,7 +220,6 @@ sync_rules:
     - id: "test"
       name: "Cookie 有效性测试"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Test"
       default_cron: "0 0 8 * * *"
@@ -246,7 +228,6 @@ sync_rules:
     - id: "try_fix"
       name: "清理缓存并重新预编译 (尝试修复异常)"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj' && echo '>> 缓存清理与重新编译就绪！'"
       default_cron: "0 0 0 1 1 *"
@@ -255,7 +236,6 @@ sync_rules:
     - id: "unfollow_batched"
       name: "批量取关失效主播"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=UnfollowBatched"
       default_cron: "0 0 12 1 * *"
@@ -264,7 +244,6 @@ sync_rules:
     - id: "vip_big_point"
       name: "大会员大积分日常任务"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint"
       default_cron: "0 7 1 * * *"
@@ -273,7 +252,6 @@ sync_rules:
     - id: "vip_privilege"
       name: "大会员专属福利领取"
       source: "main"                  # 关联代码源 ID
-      tag: "{tag}"
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipPrivilege"
       default_cron: "0 0 1 * * *"

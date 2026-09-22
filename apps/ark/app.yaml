@@ -106,7 +106,6 @@ env_schema:
 - key: ARK_BACKUP_DIR
   label: 工作区源路径 (ARK_BACKUP_DIR)
   type: string
-  tag: '{tag}'
   required: false
   default: /root/workspace
   description: 需要备份与同步的工作区根目录路径（如 /root/workspace）
@@ -114,7 +113,6 @@ env_schema:
 - key: ARK_SEAL_KEY
   label: AES-256 封条加密口令
   type: string
-  tag: '{tag}'
   required: false
   default: YourSecretKey
   description: 端到端 AES-256-CBC 封条自定义加密口令
@@ -122,7 +120,6 @@ env_schema:
 - key: ARK_REGISTRY_TYPE
   label: 目标注册表通道 (ali/gh/both)
   type: string
-  tag: '{tag}'
   required: false
   default: gh
   description: '远端镜像注册表类型 (gh: GitHub Packages, ali: 阿里云 ACR, both: 双推)'
@@ -130,7 +127,6 @@ env_schema:
 - key: ARK_REPOSITORY
   label: 目标镜像仓库路径
   type: string
-  tag: '{tag}'
   required: false
   default: ghcr.io/your-username/ark-backup
   description: 目标 OCI 镜像仓库全路径（如 ghcr.io/your-username/ark-backup）
@@ -139,7 +135,6 @@ tasks:
 - id: ark_check
   name: 环境与密钥就绪自检
   source: main
-  tag: '{tag}'
   command: bin/ark check
   default_cron: 0 0 8 * * *
   enabled: true
@@ -147,7 +142,6 @@ tasks:
 - id: ark_board
   name: 每日增量快照打包登船交付
   source: main
-  tag: '{tag}'
   command: bin/ark board --day --auto-scan
   default_cron: 0 0 2 * * *
   enabled: true
@@ -155,7 +149,6 @@ tasks:
 - id: ark_dry
   name: 模拟演练与全量校验 (Dry Run)
   source: main
-  tag: '{tag}'
   command: bin/ark dry
   default_cron: 0 0 12 * * *
   enabled: false
