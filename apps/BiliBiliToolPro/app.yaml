@@ -11,7 +11,7 @@ name: "B站全自动化助手 (BiliBiliToolPro)"
 version: "2.1.0"
 author: "RayWangQvQ"
 category: "福利签到"
-last_commit: "2026-09-20T00:49:48+08:00"
+last_commit: "2026-09-22T01:47:16+08:00"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "dotnet@10.0.401"
