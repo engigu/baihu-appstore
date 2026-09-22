@@ -1,7 +1,6 @@
 # 白虎应用商店 (Baihu AppStore)
 
-[![Build and Deploy Apps Index](https://github.com/engigu/baihu-appstore/actions/workflows/build-apps.yml/badge.svg)](https://github.com/engigu/baihu-appstore/actions/workflows/build-apps.yml)
-[![Baihu Specification](https://img.shields.io/badge/Specification-v1-blue.svg)](docs/guide/app-spec.md)
+[![Build and Deploy Apps Index](https://github.com/engigu/baihu-appstore/actions/workflows/build-apps.yml/badge.svg)](https://github.com/engigu/baihu-appstore/actions/workflows/build-apps.yml) [![Baihu Specification](https://img.shields.io/badge/Specification-v1-blue.svg)](docs/guide/app-spec.md)
 
 白虎应用商店是面向**白虎面板 (Baihu Panel)** 的声明式应用市场与生态中心。
 
