@@ -76,14 +76,14 @@ setup:
 env_schema:
   - key: "Ray_BiliBiliCookies__0"
     label: "主账号凭证 (Cookie)"
-    type: "secret"
+    type: "string"
     required: true
     description: "登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）"
     placeholder: "SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;"
 
   - key: "Ray_BiliBiliCookies__1"
     label: "账号 2 凭证 (多账号可选)"
-    type: "secret"
+    type: "string"
     required: false
     description: "多账号模式：第二个账号的 Cookie 字符串"
 
@@ -114,7 +114,7 @@ env_schema:
 
   - key: "BaihuConfig__Token"
     label: "白虎面板 API Token"
-    type: "secret"
+    type: "string"
     required: false
     description: "白虎面板 OpenAPI 访问令牌。配置后运行【扫码登录】任务即可自动持久化 Cookie 回白虎面板！"
     placeholder: "在白虎面板【系统设置】->【OpenAPI】中创建"
