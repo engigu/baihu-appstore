@@ -11,7 +11,7 @@ name: "B站全自动化助手 (BiliBiliToolPro)"
 version: "2.1.0"
 author: "RayWangQvQ"
 category: "福利签到"
-last_commit: "2026-09-22T01:47:16+08:00"
+last_commit: "2026-09-27T01:50:23+08:00"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "dotnet@10.0.401"
@@ -153,14 +153,6 @@ sync_rules:
 
   # 任务清单定义（解耦上游注释，标准化任务编排）
   tasks:
-    - id: "charge"
-      name: "大会员每月B币券充电"
-      source: "main"                  # 关联代码源 ID
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Charge"
-      default_cron: "0 0 12 * * *"
-      enabled: false
-
     - id: "daily"
       name: "每日基础经验与投币任务"
       source: "main"                  # 关联代码源 ID
@@ -169,12 +161,12 @@ sync_rules:
       default_cron: "0 0 9 * * *"
       enabled: true
 
-    - id: "live_fans_medal"
-      name: "直播粉丝牌亲密度打卡"
+    - id: "login"
+      name: "扫码登录 (自动持久化Cookie)"
       source: "main"                  # 关联代码源 ID
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveFansMedal"
-      default_cron: "0 5 0 * * *"
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Login"
+      default_cron: "0 0 1 1 *"
       enabled: false
 
     - id: "live_lottery"
@@ -182,79 +174,39 @@ sync_rules:
       source: "main"                  # 关联代码源 ID
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=LiveLottery"
-      default_cron: "0 0 13 * * *"
-      enabled: false
-
-    - id: "login"
-      name: "扫码登录 (自动持久化Cookie)"
-      source: "main"                  # 关联代码源 ID
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Login"
-      default_cron: "0 0 0 1 1 *"
+      default_cron: "*/15 * * * *"
       enabled: false
 
     - id: "manga"
-      name: "漫画任务"
+      name: "漫画权益自动领取"
       source: "main"                  # 关联代码源 ID
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Manga"
-      default_cron: "0 0 14 * * *"
+      default_cron: "0 30 10 * * *"
       enabled: true
 
-    - id: "manga_privilege"
-      name: "大会员漫画权益领取"
-      source: "main"                  # 关联代码源 ID
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=MangaPrivilege"
-      default_cron: "0 0 15 * * *"
-      enabled: true
-
-    - id: "silver2_coin"
+    - id: "silver2coin"
       name: "直播间银瓜子兑换硬币"
       source: "main"                  # 关联代码源 ID
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Silver2Coin"
-      default_cron: "0 0 8 * * *"
+      default_cron: "0 5 0 * * *"
       enabled: true
 
-    - id: "test"
-      name: "Cookie 有效性测试"
-      source: "main"                  # 关联代码源 ID
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Test"
-      default_cron: "0 0 8 * * *"
-      enabled: false
-
-    - id: "try_fix"
-      name: "清理缓存并重新预编译 (尝试修复异常)"
-      source: "main"                  # 关联代码源 ID
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj' && echo '>> 缓存清理与重新编译就绪！'"
-      default_cron: "0 0 0 1 1 *"
-      enabled: false
-
-    - id: "unfollow_batched"
-      name: "批量取关失效主播"
-      source: "main"                  # 关联代码源 ID
-      language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=UnfollowBatched"
-      default_cron: "0 0 12 1 * *"
-      enabled: false
-
-    - id: "vip_big_point"
+    - id: "vip_bigpoint"
       name: "大会员大积分日常任务"
       source: "main"                  # 关联代码源 ID
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
       command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipBigPoint"
-      default_cron: "0 7 1 * * *"
+      default_cron: "0 15 1 * * *"
       enabled: true
 
-    - id: "vip_privilege"
-      name: "大会员专属福利领取"
+    - id: "charge"
+      name: "大会员每月B币券充电"
       source: "main"                  # 关联代码源 ID
       language: "{mise_languages}"            # 运行时锁定 {mise_languages}
-      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=VipPrivilege"
-      default_cron: "0 0 1 * * *"
+      command: "dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks=Charge"
+      default_cron: "0 0 12 28 * *"
       enabled: false
 
 # ==============================================================================
@@ -266,31 +218,19 @@ scenarios:
     description: "仅执行每日登录与基础签到，耗时极短且完全防风控，适合只需保级的账号"
     default: false
     task_presets:
-        charge:
-          enabled: false
         daily:
           enabled: true
-        live_fans_medal:
+        login:
           enabled: false
         live_lottery:
           enabled: false
-        login:
-          enabled: false
         manga:
           enabled: false
-        manga_privilege:
+        silver2coin:
           enabled: false
-        silver2_coin:
+        vip_bigpoint:
           enabled: false
-        test:
-          enabled: false
-        try_fix:
-          enabled: false
-        unfollow_batched:
-          enabled: false
-        vip_big_point:
-          enabled: false
-        vip_privilege:
+        charge:
           enabled: false
 
   - id: "standard"
@@ -298,61 +238,37 @@ scenarios:
     description: "开启每日签到、自动投币、大会员大积分与漫画权益领取，最大化每日经验与收益"
     default: true
     task_presets:
-        charge:
-          enabled: true
         daily:
           enabled: true
-        live_fans_medal:
+        login:
           enabled: false
         live_lottery:
           enabled: false
-        login:
-          enabled: false
         manga:
           enabled: true
-        manga_privilege:
+        silver2coin:
           enabled: true
-        silver2_coin:
+        vip_bigpoint:
           enabled: true
-        test:
-          enabled: false
-        try_fix:
-          enabled: false
-        unfollow_batched:
-          enabled: false
-        vip_big_point:
-          enabled: false
-        vip_privilege:
+        charge:
           enabled: true
 
   - id: "hardcore"
     name: "全天候极客全能模式"
     description: "开启全部自动化功能，包括每 15 分钟一次的高频直播间天选时刻自动巡检抽奖"
     task_presets:
-        charge:
-          enabled: true
         daily:
           enabled: true
-        live_fans_medal:
-          enabled: true
+        login:
+          enabled: false
         live_lottery:
           enabled: true
           cron: "0 */20 * * * *"
-        login:
-          enabled: false
         manga:
           enabled: true
-        manga_privilege:
+        silver2coin:
           enabled: true
-        silver2_coin:
+        vip_bigpoint:
           enabled: true
-        test:
-          enabled: false
-        try_fix:
-          enabled: false
-        unfollow_batched:
-          enabled: true
-        vip_big_point:
-          enabled: true
-        vip_privilege:
+        charge:
           enabled: true
