@@ -435,11 +435,8 @@ def main():
     if args.source_dir and Path(args.source_dir).exists():
         repo_dir = Path(args.source_dir).resolve()
         print(f"[源目录] 使用指定的本地目录: {repo_dir}")
-    elif not os.environ.get("GITHUB_ACTIONS") and Path("F:/workspace/BiliBiliToolPro").exists():
-        repo_dir = Path("F:/workspace/BiliBiliToolPro").resolve()
-        print(f"[源目录] 本地开发环境自动命中源码缓存: {repo_dir}")
     else:
-        # 云端 CI/CD 或无本地缓存时，自动通过 git 从上游克隆
+        # 云端 CI/CD 或未指定本地目录时，自动通过 git 从上游克隆
         proxy = args.proxy or os.environ.get("GH_PROXY", "")
         tmp_dir_handle = clone_upstream_repo(proxy)
         if tmp_dir_handle:

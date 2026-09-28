@@ -35,36 +35,36 @@ service_opts:
   web_path: /
 sources:
   - id: main
-    source_type: git
-    source_url: https://github.com/525815266/YYB-Go-Enhanced.git
-    branch: main
-    target_path: main
+    source_type: none
 setup:
-  check: mise exec {mise_languages} -- node -e "const fs=require('fs');const p=require('path');const d=process.env.APP_DIR||process.cwd();process.exit(fs.existsSync(p.join(d,'main','yyb-go'))||fs.existsSync(p.join(d,'main','yyb-go.exe'))?0:1)"
+  check: mise exec {mise_languages} -- node -e "const fs=require('fs');const p=require('path');const d=process.env.APP_DIR||process.cwd();process.exit(fs.existsSync(p.join(d,'bin','yyb-go'))||fs.existsSync(p.join(d,'bin','yyb-go.exe'))?0:1)"
   install: |-
-    echo ">> 正在从 GitHub Release 极速拉取对应架构的 YYB-Go 预编译二进制..."
+    echo ">> 正在从 GitHub Release 极速拉取对应架构的 YYB-Go 预编译压缩归档..."
     mise exec {mise_languages} -- node -e "
       const fs = require('fs');
       const path = require('path');
+      const { execSync } = require('child_process');
       const appDir = process.env.APP_DIR || process.cwd();
-      const mainDir = path.join(appDir, 'main');
-      if (!fs.existsSync(mainDir)) fs.mkdirSync(mainDir, { recursive: true });
+      const binDir = path.join(appDir, 'bin');
+      if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
 
       const isWin = process.platform === 'win32';
       const isDarwin = process.platform === 'darwin';
       const arch = process.arch === 'arm64' ? 'arm64' : 'amd64';
       
       let platformTag = 'linux-' + arch;
+      let archiveExt = '.tar.gz';
       let targetName = 'yyb-go';
       if (isWin) {
-        platformTag = 'windows-amd64.exe';
+        platformTag = 'windows-amd64';
+        archiveExt = '.zip';
         targetName = 'yyb-go.exe';
       } else if (isDarwin) {
         platformTag = 'darwin-' + arch;
       }
       
-      const fileName = 'yyb-go-' + platformTag;
-      const targetPath = path.join(mainDir, targetName);
+      const fileName = 'yyb-go-' + platformTag + archiveExt;
+      const archivePath = path.join(binDir, fileName);
       console.log('>> 匹配架构: ' + process.platform + ' / ' + process.arch + ' -> ' + fileName);
 
       const rawUrl = 'https://github.com/engigu/baihu-appstore/releases/download/yyb-go-prebuilt/' + fileName;
@@ -88,12 +88,12 @@ setup:
         const next = () => {
           if (isHandled) return;
           isHandled = true;
-          try { fs.unlinkSync(targetPath); } catch(e){}
+          try { fs.unlinkSync(archivePath); } catch(e){}
           tryDownload(index + 1);
         };
         const fetchUrl = (reqUrl) => {
           const client = reqUrl.startsWith('https') ? require('https') : require('http');
-          const file = fs.createWriteStream(targetPath);
+          const file = fs.createWriteStream(archivePath);
           const req = client.get(reqUrl, (res) => {
             if (res.statusCode === 301 || res.statusCode === 302) {
               file.close();
@@ -103,9 +103,29 @@ setup:
               res.pipe(file);
               file.on('finish', () => {
                 file.close();
-                if (!isWin) { try { fs.chmodSync(targetPath, 0o755); } catch(e){} }
-                else { try { fs.copyFileSync(targetPath, path.join(mainDir, 'yyb-go')); } catch(e){} }
-                console.log('>> YYB-Go 原生二进制就绪:', targetName);
+                console.log('>> 压缩归档下载完成，正在解包...');
+                try {
+                  if (isWin) {
+                    try {
+                      execSync('tar -xf \"' + archivePath + '\" -C \"' + binDir + '\"', { stdio: 'ignore' });
+                    } catch(err) {
+                      execSync('powershell -NoProfile -Command \"Expand-Archive -Force -LiteralPath \'' + archivePath + '\' -DestinationPath \'' + binDir + '\'\"', { stdio: 'ignore' });
+                    }
+                  } else {
+                    execSync('tar -xzf \"' + archivePath + '\" -C \"' + binDir + '\"', { stdio: 'ignore' });
+                  }
+                  try { fs.unlinkSync(archivePath); } catch(e){}
+                  const targetExe = path.join(binDir, targetName);
+                  if (!isWin) {
+                    try { fs.chmodSync(targetExe, 0o755); } catch(e){}
+                  } else {
+                    try { fs.copyFileSync(targetExe, path.join(binDir, 'yyb-go')); } catch(e){}
+                  }
+                  console.log('>> YYB-Go 原生二进制就绪:', targetName);
+                } catch(unpackErr) {
+                  console.error('>> [错误] 解压失败: ' + unpackErr.message);
+                  next();
+                }
               });
             } else {
               file.close();
@@ -129,7 +149,7 @@ setup:
       tryDownload(0);
     "
     echo ">> YYB-Go-Enhanced 极速部署就绪！"
-  uninstall: mise exec {mise_languages} -- node -e "const p=require('path');const d=process.env.APP_DIR||process.cwd();try{require('fs').rmSync(p.join(d,'main'),{recursive:true,force:true})}catch(e){}"
+  uninstall: mise exec {mise_languages} -- node -e "const p=require('path');const d=process.env.APP_DIR||process.cwd();try{require('fs').rmSync(p.join(d,'bin'),{recursive:true,force:true})}catch(e){}"
 env_schema:
   - key: YYB_PORT
     label: 内部监听端口 (YYB_PORT)
@@ -178,7 +198,7 @@ tasks:
     name: YYB-Go 常驻后台服务与 Web 控制台
     source: main
     command: ./yyb-go -host 0.0.0.0 -port {port}
-    work_dir: "{app_dir}/main"
+    work_dir: "{app_dir}/bin"
     default_cron: "0 0 0 1 1 *"
     enabled: true
     service_opts:
