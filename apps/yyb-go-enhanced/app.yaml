@@ -107,12 +107,12 @@ setup:
                 try {
                   if (isWin) {
                     try {
-                      execSync('tar -xf \"' + archivePath + '\" -C \"' + binDir + '\"', { stdio: 'ignore' });
+                      execSync('tar -xf "' + archivePath + '" -C "' + binDir + '"', { stdio: 'ignore' });
                     } catch(err) {
-                      execSync('powershell -NoProfile -Command \"Expand-Archive -Force -LiteralPath \'' + archivePath + '\' -DestinationPath \'' + binDir + '\'\"', { stdio: 'ignore' });
+                      execSync('powershell -NoProfile -Command "Expand-Archive -Force -LiteralPath '' + archivePath + '' -DestinationPath '' + binDir + ''"', { stdio: 'ignore' });
                     }
                   } else {
-                    execSync('tar -xzf \"' + archivePath + '\" -C \"' + binDir + '\"', { stdio: 'ignore' });
+                    execSync('tar -xzf "' + archivePath + '" -C "' + binDir + '"', { stdio: 'ignore' });
                   }
                   try { fs.unlinkSync(archivePath); } catch(e){}
                   const targetExe = path.join(binDir, targetName);
