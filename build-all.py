@@ -130,6 +130,7 @@ def main():
     parser = argparse.ArgumentParser(description="白虎应用商店全量构建调度器")
     parser.add_argument("--apps-dir", default="apps", help="应用存放根目录路径")
     parser.add_argument("--branch", default=os.getenv("GITHUB_REF_NAME", "main"), help="Git 分支名 (默认读取 GITHUB_REF_NAME 或 main)")
+    parser.add_argument("--proxy", default="", help="GitHub 加速代理前缀 (可选)")
     args = parser.parse_args()
 
     branch = args.branch or "main"
