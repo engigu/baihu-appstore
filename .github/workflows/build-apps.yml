@@ -200,3 +200,48 @@ jobs:
         run: |
           echo ">> 正在强刷 jsDelivr CDN 全球节点缓存..."
           curl -s "https://purge.jsdelivr.net/gh/engigu/baihu-appstore@${GITHUB_REF_NAME:-main}/apps.json" || true
+
+  # 步骤 5: 预编译 YYB-Go 等重型应用的多架构二进制产物并缓存为 Artifact 与 Release 直链
+  prebuild-yyb:
+    name: Prebuild Multi-Arch Binaries (YYB-Go)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Upstream YYB-Go Source
+        uses: actions/checkout@v4
+        with:
+          repository: '525815266/YYB-Go-Enhanced'
+          ref: 'main'
+          path: 'yyb-src'
+
+      - name: Set up Go 1.23
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Compile Multi-Arch Binaries
+        run: |
+          mkdir -p dist-bin
+          cd yyb-src
+          export CGO_ENABLED=0
+          
+          echo ">> 正在交叉编译 Linux amd64..."
+          GOOS=linux GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../dist-bin/yyb-go-linux-amd64 ./cmd/yyb-go
+          
+          echo ">> 正在交叉编译 Linux arm64..."
+          GOOS=linux GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ../dist-bin/yyb-go-linux-arm64 ./cmd/yyb-go
+          
+          echo ">> 正在交叉编译 Windows amd64..."
+          GOOS=windows GOARCH=amd64 go build -trimpath -ldflags="-s -w" -o ../dist-bin/yyb-go-windows-amd64.exe ./cmd/yyb-go
+          
+          echo ">> 正在交叉编译 macOS arm64..."
+          GOOS=darwin GOARCH=arm64 go build -trimpath -ldflags="-s -w" -o ../dist-bin/yyb-go-darwin-arm64 ./cmd/yyb-go
+          
+          cd ..
+      - name: Publish Binaries to Prebuilt Release
+        if: github.event_name != 'pull_request'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload yyb-go-prebuilt dist-bin/* --clobber --repo ${{ github.repository }} || \
+          gh release create yyb-go-prebuilt dist-bin/* --title "YYB-Go Prebuilt Binaries" --notes "YYB-Go 多架构原生预编译二进制缓存" --repo ${{ github.repository }}
+
