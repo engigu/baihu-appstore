@@ -2,6 +2,7 @@
 # 白虎面板应用规范定义文件 (Baihu Application Specification)
 # 应用名称: YYB-Go-Enhanced 账号与协议管理终端
 # 规范版本: v1
+# 本文件由 apps/yyb-go-enhanced/build.py 自动构建生成 (请勿手动修改)
 # ==============================================================================
 
 spec_version: "v1"
