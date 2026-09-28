@@ -324,12 +324,6 @@ env_schema:
     description: "登录 bilibili.com 后获取的 Cookie，包含 SESSDATA、bili_jct 等字段（亦可通过扫码登录任务自动注入）"
     placeholder: "SESSDATA=xxxx; bili_jct=yyyy; DedeUserID=zzzz;"
 
-  - key: "Ray_BiliBiliCookies__1"
-    label: "账号 2 凭证 (多账号可选)"
-    type: "string"
-    required: false
-    description: "多账号模式：第二个账号的 Cookie 字符串"
-
   - key: "Ray_DailyTaskConfig__NumberOfCoins"
     label: "每日投币数量"
     type: "select"
