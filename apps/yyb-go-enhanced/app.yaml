@@ -8,10 +8,10 @@
 spec_version: "v1"
 id: yyb-go-enhanced
 name: YYB-Go-Enhanced 账号与协议管理终端
-version: "0.2.14"
+version: "0.2.15"
 author: "525815266"
 category: "系统工具"
-last_commit: "2026-09-28T14:39:36+08:00"
+last_commit: "2026-09-28T23:37:52+08:00"
 template:
   - tag: "YYBGo"
   - mise_languages: "node@23.11.1"
