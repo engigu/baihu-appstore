@@ -43,7 +43,7 @@ setup:
     mise exec {mise_languages} -- node -e "
       const fs = require('fs');
       const path = require('path');
-      const { execSync } = require('child_process');
+      const { spawnSync } = require('child_process');
       const appDir = process.env.APP_DIR || process.cwd();
       const binDir = path.join(appDir, 'bin');
       if (!fs.existsSync(binDir)) fs.mkdirSync(binDir, { recursive: true });
@@ -69,8 +69,8 @@ setup:
 
       const rawUrl = 'https://github.com/engigu/baihu-appstore/releases/download/yyb-go-prebuilt/' + fileName;
       const mirrors = [
-        'https://ghfast.top/' + rawUrl,
         'https://gh-proxy.com/' + rawUrl,
+        'https://ghfast.top/' + rawUrl,
         'https://mirror.ghproxy.com/' + rawUrl,
         'https://ghproxy.net/' + rawUrl,
         'https://ghp.ci/' + rawUrl,
@@ -106,13 +106,12 @@ setup:
                 console.log('>> 压缩归档下载完成，正在解包...');
                 try {
                   if (isWin) {
-                    try {
-                      execSync('tar -xf "' + archivePath + '" -C "' + binDir + '"', { stdio: 'ignore' });
-                    } catch(err) {
-                      execSync('powershell -NoProfile -Command "Expand-Archive -Force -LiteralPath '' + archivePath + '' -DestinationPath '' + binDir + ''"', { stdio: 'ignore' });
+                    let r = spawnSync('tar', ['-xf', archivePath, '-C', binDir]);
+                    if (r.status !== 0) {
+                      spawnSync('powershell', ['-NoProfile', '-Command', 'Expand-Archive', '-Force', '-LiteralPath', archivePath, '-DestinationPath', binDir]);
                     }
                   } else {
-                    execSync('tar -xzf "' + archivePath + '" -C "' + binDir + '"', { stdio: 'ignore' });
+                    spawnSync('tar', ['-xzf', archivePath, '-C', binDir]);
                   }
                   try { fs.unlinkSync(archivePath); } catch(e){}
                   const targetExe = path.join(binDir, targetName);
