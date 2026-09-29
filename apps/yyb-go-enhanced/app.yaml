@@ -8,10 +8,10 @@
 spec_version: "v1"
 id: yyb-go-enhanced
 name: YYB-Go-Enhanced 账号与协议管理终端
-version: "0.2.15"
+version: "0.2.16"
 author: "525815266"
 category: "系统工具"
-last_commit: "2026-09-28T23:37:52+08:00"
+last_commit: "2026-09-29T09:29:41+08:00"
 template:
   - tag: "YYBGo"
   - mise_languages: "node@23.11.1"
@@ -39,7 +39,7 @@ sources:
 setup:
   check: mise exec {mise_languages} -- node -e "const fs=require('fs');const p=require('path');const d=process.env.APP_DIR||process.cwd();process.exit(fs.existsSync(p.join(d,'bin','yyb-go'))||fs.existsSync(p.join(d,'bin','yyb-go.exe'))?0:1)"
   install: |-
-    echo ">> 正在从 GitHub Release 极速拉取对应架构的 YYB-Go 预编译压缩归档..."
+    echo ">> 正在从上游官方 GitHub Release 极速拉取对应架构的 YYB-Go 原生归档..."
     mise exec {mise_languages} -- node -e "
       const fs = require('fs');
       const path = require('path');
@@ -63,11 +63,12 @@ setup:
         platformTag = 'darwin-' + arch;
       }
       
-      const fileName = 'yyb-go-' + platformTag + archiveExt;
+      const fileName = 'yyb-go-v0.2.16-' + platformTag + archiveExt;
       const archivePath = path.join(binDir, fileName);
       console.log('>> 匹配架构: ' + process.platform + ' / ' + process.arch + ' -> ' + fileName);
 
-      const rawUrl = 'https://github.com/engigu/baihu-appstore/releases/download/yyb-go-prebuilt/' + fileName;
+      // 上游官方 GitHub Release 直链及多路国内镜像加速通道
+      const rawUrl = 'https://github.com/525815266/YYB-Go-Enhanced/releases/download/v0.2.16/' + fileName;
       const mirrors = [
         'https://gh-proxy.com/' + rawUrl,
         'https://ghfast.top/' + rawUrl,
@@ -103,7 +104,7 @@ setup:
               res.pipe(file);
               file.on('finish', () => {
                 file.close();
-                console.log('>> 压缩归档下载完成，正在解包...');
+                console.log('>> 官方归档包下载完成，正在解包...');
                 try {
                   if (isWin) {
                     let r = spawnSync('tar', ['-xf', archivePath, '-C', binDir]);
@@ -120,7 +121,7 @@ setup:
                   } else {
                     try { fs.copyFileSync(targetExe, path.join(binDir, 'yyb-go')); } catch(e){}
                   }
-                  console.log('>> YYB-Go 原生二进制就绪:', targetName);
+                  console.log('>> YYB-Go 官方原生二进制就绪:', targetName);
                 } catch(unpackErr) {
                   console.error('>> [错误] 解压失败: ' + unpackErr.message);
                   next();
