@@ -21,7 +21,7 @@
   - [7. 运行场景预设模板 (Scenarios)](#7-运行场景预设模板-scenarios)
 - [三、 索引构建与全量索引 (apps.json)](#三-索引构建与全量索引-appsjson)
 - [四、 贡献指南 (How to Contribute)](#四-贡献指南-how-to-contribute)
-- [五、 版权与移除说明 (Notice & Opt-out Policy)](#五-版权与移除说明-notice--opt-out-policy)
+- [五、 版权与移除说明 (Notice &amp; Opt-out Policy)](#五-版权与移除说明-notice--opt-out-policy)
 
 ---
 
@@ -248,6 +248,7 @@ scenarios:
 * **CI/CD 自动化**：每次将更改 Push 到 `main` 分支时，GitHub Actions 会自动触发 `.github/workflows/build-apps.yml` 重新运行构建并更新 `apps.json`。
 
 #### 本地测试构建命令：
+
 ```bash
 mise x -- python build-all.py
 ```
