@@ -1,0 +1,226 @@
+# ==============================================================================
+# 白虎面板应用规范定义文件 (Baihu Application Specification v1)
+# 应用标识: wxread-panel
+# 上游仓库: https://github.com/wlunan/wxread-panel
+#
+# 【用户前置条件】本应用不走账号密码登录，必须由用户在微信读书网页端自行抓包获取
+# WXREAD_CURL_BASH 凭证。用户侧引导文案统一收敛在三处，请勿分散：
+#   1) description  —— 详情页总览（告知"用前必须抓包"）
+#   2) env_schema.WXREAD_CURL_BASH 的 label / description / placeholder —— 安装表单就地引导
+#   3) tasks.read.remark —— 任务列表二次提示（凭证缺失/过期会导致失败）
+# 抓包步骤（供维护者核对，用户侧文案为同一套流程）：
+#   1. 电脑浏览器登录 https://weread.qq.com/ 并打开《三体》等书籍，点『下一页』
+#   2. F12 开发者工具 -> Network 面板，筛选 read
+#   3. 命中 https://weread.qq.com/web/book/read 请求，右键 Copy as cURL (bash)
+#   4. 整段粘贴进安装表单的 WXREAD_CURL_BASH 字段（返回含 synckey 即为有效）
+# ==============================================================================
+
+spec_version: "v1"
+id: "wxread-panel"
+name: "微信读书自动阅读"
+version: "1.0.0"
+author: "wlunan"
+category: "福利签到"
+last_commit: "2026-10-02T14:50:00+08:00"
+template:
+  - tag: "WxReadPanel"
+  - mise_languages: "python@3.13.12"
+description: "微信读书自动阅读的多面板通用版。【使用前必读】本应用不使用账号密码登录，需自行抓包配置 WXREAD_CURL_BASH 凭证：登录 weread.qq.com 打开书籍翻到下一页，按 F12 抓取 https://weread.qq.com/web/book/read 请求并复制为 Bash 格式，整段粘贴进安装表单。支持目标总时长与请求间隔随机、synckey 自动修复、鉴权失效自动刷新 Cookie，并可推送至 PushPlus / WxPusher / Telegram / ServerChan。抓包图文步骤见上游项目主页 README『操作步骤 → 抓包准备』章节。"
+icon: "https://weread.qq.com/favicon.ico"
+homepage: "https://github.com/wlunan/wxread-panel"
+
+# ------------------------------------------------------------------------------
+# 0. 高级构建与部署控制预设 (Build Opts)
+# ------------------------------------------------------------------------------
+build_opts:
+  force_setup: false                  # 依赖探活已足够廉价，无需每次强制重装
+  skip_setup: false
+  skip_sync: false
+  overwrite_env: false
+  overwrite_task: true
+
+# ------------------------------------------------------------------------------
+# 0.1 应用主任务调度规则与策略预设 (Schedule Opts)
+# ------------------------------------------------------------------------------
+# 目标阅读时长区间最长为 60 分钟，超时需放宽，否则任务会被中途强杀
+schedule_opts:
+  schedule: "0 0 7 * * *"
+  random_range: 0
+  timeout: 90
+  retry_count: 0
+  retry_interval: 0
+
+# ------------------------------------------------------------------------------
+# 1. 脚本代码源列表 (Sources)
+# ------------------------------------------------------------------------------
+sources:
+  - id: "main"
+    source_type: "git"
+    source_url: "https://github.com/wlunan/wxread-panel.git"
+    branch: "master"
+    path: ""
+    single_file: false
+    proxy: "ghproxy"
+    target_path: "main"
+
+# ------------------------------------------------------------------------------
+# 2. 原生 Shell 环境与依赖编排 (Setup)
+# ------------------------------------------------------------------------------
+setup:
+  # 依赖快速探测：requests 已就绪则退出码 0，秒级跳过安装
+  check: "mise exec {mise_languages} -- python -c \"import requests\""
+
+  # 复用镜像预装 python@3.13.12，仅补装 requests
+  install: |
+    mise install {mise_languages}
+    echo ">> 正在安装微信读书脚本 Python 依赖..."
+    mise exec {mise_languages} -- python -m pip install --no-cache-dir -r "{app_dir}/main/requirements.txt" -i https://pypi.tuna.tsinghua.edu.cn/simple
+    echo ">> 依赖环境准备就绪！"
+
+  post_install: |
+    echo ">> 后置初始化准备就绪！"
+
+  # 跨平台清理：只清理应用自身的字节码缓存，不依赖 rm -rf
+  # 注意：不要 pip uninstall requests —— 那会动到 mise 全局共享的 python 环境，可能连带破坏其它应用的依赖
+  uninstall: |
+    mise exec {mise_languages} -- python -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in pathlib.Path(r'{app_dir}/main').rglob('__pycache__')]"
+
+# ------------------------------------------------------------------------------
+# 3. 环境变量声明契约 (Env Schema)
+# ------------------------------------------------------------------------------
+env_schema:
+  - key: "WXREAD_CURL_BASH"
+    label: "read 接口凭证 (需自行抓包，必填)"
+    type: "secret"
+    required: true
+    description: "必填！本应用需自行抓包：电脑浏览器登录 weread.qq.com 并打开一本已购/免费书籍，点『下一页』；按 F12 打开开发者工具切到 Network 面板，筛选 read；找到 https://weread.qq.com/web/book/read 请求后右键选择 Copy as cURL (bash)，将整段命令原样粘贴到此处。该接口返回 succ=1 且带 synckey 字段即为有效凭证。凭证随登录会话过期失效，届时需重新抓包并更新本字段。"
+    placeholder: "curl https://weread.qq.com/web/book/read -H ... --data-raw ..."
+
+  - key: "READ_TIME_MIN"
+    label: "目标阅读时长下限 (分钟)"
+    type: "number"
+    required: false
+    default: 20
+    description: "每次运行在该区间内随机取目标总时长；只想完成签到可设为 1"
+
+  - key: "READ_TIME_MAX"
+    label: "目标阅读时长上限 (分钟)"
+    type: "number"
+    required: false
+    default: 60
+    description: "与下限填相同值即可固定时长"
+
+  - key: "READ_INTERVAL_MIN"
+    label: "单次阅读间隔下限 (秒)"
+    type: "number"
+    required: false
+    default: 20
+    description: "约等于服务端单次计入的阅读时长，不建议大幅偏离 30"
+
+  - key: "READ_INTERVAL_MAX"
+    label: "单次阅读间隔上限 (秒)"
+    type: "number"
+    required: false
+    default: 40
+
+  - key: "READ_NUM"
+    label: "兼容旧参数：阅读次数"
+    type: "number"
+    required: false
+    default: 40
+    description: "已弃用（兼容保留），仅当未配置 READ_TIME_* 时生效，等价于 次数 × 30 秒"
+
+  - key: "PUSH_METHOD"
+    label: "推送方式"
+    type: "select"
+    required: false
+    default: ""
+    options:
+      - label: "不推送"
+        value: ""
+      - label: "PushPlus"
+        value: "pushplus"
+      - label: "WxPusher"
+        value: "wxpusher"
+      - label: "Telegram"
+        value: "telegram"
+      - label: "ServerChan"
+        value: "serverchan"
+
+  - key: "PUSHPLUS_TOKEN"
+    label: "PushPlus Token"
+    type: "secret"
+    required: false
+    description: "当 PUSH_METHOD=pushplus 时必填"
+
+  - key: "WXPUSHER_SPT"
+    label: "WxPusher SPT"
+    type: "secret"
+    required: false
+    description: "当 PUSH_METHOD=wxpusher 时必填"
+
+  - key: "TELEGRAM_BOT_TOKEN"
+    label: "Telegram 机器人 Token"
+    type: "secret"
+    required: false
+    description: "当 PUSH_METHOD=telegram 时必填"
+
+  - key: "TELEGRAM_CHAT_ID"
+    label: "Telegram 群组 / 会话 ID"
+    type: "string"
+    required: false
+    description: "当 PUSH_METHOD=telegram 时必填"
+
+  - key: "SERVERCHAN_SPT"
+    label: "ServerChan SendKey"
+    type: "secret"
+    required: false
+    description: "当 PUSH_METHOD=serverchan 时必填"
+
+# ------------------------------------------------------------------------------
+# 4. 任务生成与调度映射 (Sync Rules / Tasks)
+# ------------------------------------------------------------------------------
+sync_rules:
+  defaults:
+    timeout: 90                       # 与 schedule_opts 一致，覆盖 60 分钟最长阅读
+    retry_count: 0
+    retry_interval: 0
+    work_dir: "{app_dir}/main"        # 必须与脚本同目录，保证 from config import 生效
+    language: "{mise_languages}"
+
+  tasks:
+    - id: "read"
+      name: "微信读书自动阅读"
+      source: "main"
+      language: "{mise_languages}"
+      command: "python main.py"
+      default_cron: "0 0 7 * * *"
+      enabled: true
+      remark: "首次运行前必须先完成 WXREAD_CURL_BASH 抓包配置，否则会因登录状态失效而失败；凭证过期后需重新抓包更新。任务会按 READ_TIME_MIN~READ_TIME_MAX 随机读够指定时长，单次运行可能长达 1 小时，请勿中途中断或把超时设得过短。"
+
+# ------------------------------------------------------------------------------
+# 5. 使用场景模板 (Scenarios)
+# ------------------------------------------------------------------------------
+scenarios:
+  - id: "standard"
+    name: "每日清晨自动阅读（推荐）"
+    description: "每天 07:00 自动阅读，时长在 READ_TIME_MIN~READ_TIME_MAX 区间内随机"
+    default: true
+    task_presets:
+      read:
+        enabled: true
+
+  - id: "evening"
+    name: "夜间静默阅读"
+    description: "改到每天 22:30 执行，适合白天不方便挂机"
+    task_presets:
+      read:
+        enabled: true
+        cron: "0 30 22 * * *"
+
+  - id: "manual"
+    name: "仅保留任务（手动触发）"
+    description: "同步任务但不自动定时，需要时在面板手动运行"
+    task_presets:
+      read:
+        enabled: false
