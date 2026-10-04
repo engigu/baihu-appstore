@@ -1,0 +1,13 @@
+{
+  "name": "wxread-panel",
+  "version": "1.0.0",
+  "description": "根据 wlunan/wxread-panel 上游仓库动态构建白虎应用规范文件 (app.yaml)",
+  "language": "python",
+  "script": "build.py",
+  "command": "python build.py",
+  "output": "app.yaml",
+  "upstream": {
+    "repo": "https://github.com/wlunan/wxread-panel.git",
+    "branch": "master"
+  }
+}
