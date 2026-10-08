@@ -11,7 +11,7 @@ name: "B站全自动化助手 (BiliBiliToolPro)"
 version: "4.1.1"
 author: "RayWangQvQ"
 category: "福利签到"
-last_commit: "2026-10-07T14:04:24+08:00"
+last_commit: "2026-09-29T13:19:31+08:00"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "dotnet@10.0.401"
@@ -38,7 +38,7 @@ sources:
   - id: "main"                        # [必填] 源唯一标识符（在下方 tasks 中通过 source: "main" 关联）
     source_type: "git"                # 对应 --source-type: git (Git仓库) 或 url (单文件下载)
     source_url: "https://github.com/RayWangQvQ/BiliBiliToolPro.git" # 对应 --source-url: 上游开源项目地址
-    branch: "4.1.1"       # 对应 --branch: 锁定上游官方 4.1.1 Release Tag 源码
+    branch: "4.1.1"            # 对应 --branch: 动态锁定上游 Release 标签或分支
     path: ""                          # 对应 --path: 留空全量检出
     single_file: false                # 对应 --single-file: 仓库模式
     proxy: "ghproxy"                  # 对应 --proxy: none / ghproxy / mirror / custom
