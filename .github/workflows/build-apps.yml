@@ -63,8 +63,10 @@ jobs:
           echo ">> 正在从 engigu/baihu-panel 下载最新官方 Release 预编译产物..."
           gh release download --repo engigu/baihu-panel --pattern "baihu-linux-amd64.tar.gz" --output baihu-linux-amd64.tar.gz
           tar -xzf baihu-linux-amd64.tar.gz
+          if [ -f baihu-linux-amd64 ]; then mv baihu-linux-amd64 baihu; fi
           chmod +x ./baihu
           echo ">> 白虎 CLI 二进制准备就绪！"
+          ./baihu --version || ./baihu -v || true
 
       - name: Upload Baihu CLI Artifact
         uses: actions/upload-artifact@v4
