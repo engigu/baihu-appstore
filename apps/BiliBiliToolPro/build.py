@@ -181,9 +181,9 @@ def parse_tasks_from_repo(repo_dir: Path):
             enabled = target_code in default_enabled_codes
 
             if target_code == "TryFix":
-                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj' && echo '>> 缓存清理与重新编译就绪！'"
+                cmd = "./Ray.BiliBiliTool.Console --ENVIRONMENT=Production --runTasks=Test"
             else:
-                cmd = f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks={target_code}"
+                cmd = f"./Ray.BiliBiliTool.Console --ENVIRONMENT=Production --runTasks={target_code}"
 
             tasks.append({
                 "id": task_id,
@@ -207,9 +207,9 @@ def parse_tasks_from_repo(repo_dir: Path):
         ]
         for t_id, t_name, t_code, t_cron, t_en in fallback_targets:
             if t_code == "TryFix":
-                cmd = "rm -rf '{app_dir}/bin' 2>/dev/null || true; dotnet publish -c Release -o '{app_dir}/bin' '{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj' && echo '>> 缓存清理与重新编译就绪！'"
+                cmd = "./Ray.BiliBiliTool.Console --ENVIRONMENT=Production --runTasks=Test"
             else:
-                cmd = f"dotnet Ray.BiliBiliTool.Console.dll --ENVIRONMENT=Production --runTasks={t_code}"
+                cmd = f"./Ray.BiliBiliTool.Console --ENVIRONMENT=Production --runTasks={t_code}"
 
             tasks.append({
                 "id": t_id,
@@ -258,13 +258,12 @@ def get_repo_version(repo_dir: Path, fallback_version: str = "4.1.1") -> str:
 
 def generate_app_yaml(tasks, version="4.1.1", source_ref="4.1.1", last_commit=""):
     """把提取出来的 tasks 列表融合填充进规范的标准 YAML 模板"""
-    mise_languages = "{mise_languages}"
     tasks_yaml_lines = []
     for t in tasks:
         tasks_yaml_lines.append(f'    - id: "{t["id"]}"')
         tasks_yaml_lines.append(f'      name: "{t["name"]}"')
-        tasks_yaml_lines.append('      source: "main"                  # 关联代码源 ID')
-        tasks_yaml_lines.append('      language: "{mise_languages}"            # 运行时锁定 {mise_languages}')
+        tasks_yaml_lines.append('      source: "main"')
+        tasks_yaml_lines.append('      language: "{mise_languages}"')
         tasks_yaml_lines.append(f'      command: "{t["command"]}"')
         tasks_yaml_lines.append(f'      default_cron: "{t["cron"]}"')
         tasks_yaml_lines.append(f'      enabled: {"true" if t["enabled"] else "false"}')
@@ -313,7 +312,7 @@ category: "福利签到"
 last_commit: "{last_commit}"
 template:
   - tag: "BiliBiliToolPro"
-  - mise_languages: "dotnet@10.0.401"
+  - mise_languages: "node@23"
 description: "基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理"
 icon: "https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png"
 homepage: "https://github.com/RayWangQvQ/BiliBiliToolPro"
@@ -329,46 +328,132 @@ schedule_opts:
   retry_interval: 0
 
 # ==============================================================================
-# 1. 脚本代码源列表 (Sources) —— 支持定义多个源，100% 复用 baihu reposync 参数规范
+# 1. 脚本代码源列表 (Sources) —— 纯 Release 预编译模式，无需 clone 上游源码
 # ==============================================================================
-# 支持配置多个独立的代码源（例如：主业务仓库 + 外部公共工具库 + 单文件补丁直链）
-# 单源场景下亦支持使用单个 source: {{ ... }} 对象，系统自动兼容处理
 sources:
-  - id: "main"                        # [必填] 源唯一标识符（在下方 tasks 中通过 source: "main" 关联）
-    source_type: "git"                # 对应 --source-type: git (Git仓库) 或 url (单文件下载)
-    source_url: "{UPSTREAM_REPO}" # 对应 --source-url: 上游开源项目地址
-    branch: "{source_ref}"            # 对应 --branch: 动态锁定上游 Release 标签或分支
-    path: ""                          # 对应 --path: 留空全量检出
-    single_file: false                # 对应 --single-file: 仓库模式
-    proxy: "ghproxy"                  # 对应 --proxy: none / ghproxy / mirror / custom
-    proxy_url: ""                     # 对应 --proxy-url: 自定义代理前缀
-    auth_token: ""                    # 对应 --auth-token: 认证 Token
-    http_proxy: ""                    # 对应 --http-proxy: HTTP/SOCKS 代理
-    blacklist: "qinglong/DefaultTasks|.git|baihu/DefaultTasks/dev" # 对应 --blacklist: 过滤冗余目录
-    target_path: "main"               # 相对存储目录（留空默认按 id 存入 sources/{{id}}）
+  - id: "main"
+    source_type: "null"
 
 # ==============================================================================
-# 2. 原生 Shell 环境与依赖编排 (Setup) —— 拒绝死板配置，原生 Shell 极速执行
+# 2. 原生 Shell 环境与依赖编排 (Setup) —— 极速拉取官方跨平台 Release 包
 # ==============================================================================
 setup:
   # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
-  check: "mise exec {mise_languages} -- dotnet --version"
+  check: "node -e \\"const fs=require('fs'), p=require('path'); const bin=p.join(process.env.APP_DIR||process.cwd(),'bin'); if(!fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console')) && !fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console.exe'))){{process.exit(1)}}\\""
 
-  # [必填] 依赖安装命令：安装 {mise_languages} 并一次性预编译到 bin 目录，彻底避免每次任务重复 build
+  # [必填] 依赖安装命令：根据当前操作系统架构拉取对应的官方 Release zip 并解压到 bin 目录
   install: |
-    mise install {mise_languages}
-    echo ">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)..."
-    export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
-    mise exec {mise_languages} -- dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
-    echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
+    node -e "
+    const fs = require('fs');
+    const path = require('path');
+    const https = require('https');
+    const http = require('http');
+    const {{ execSync }} = require('child_process');
 
-  # [可选] 后置初始化命令：编译成功后自动执行的后置 Shell 脚本
+    const appDir = process.env.APP_DIR || process.cwd();
+    const binDir = path.join(appDir, 'bin');
+    fs.mkdirSync(binDir, {{ recursive: true }});
+
+    let osName = process.platform === 'win32' ? 'win' : (process.platform === 'darwin' ? 'osx' : 'linux');
+    let archName = process.arch === 'arm64' ? 'arm64' : (process.arch === 'arm' ? 'arm' : 'x64');
+
+    const version = '{version}';
+    const tag = '{source_ref}';
+    const zipName = 'bilibili-tool-pro-v' + version + '-' + osName + '-' + archName + '.zip';
+    const rawUrl = 'https://github.com/RayWangQvQ/BiliBiliToolPro/releases/download/' + tag + '/' + zipName;
+
+    const mirrors = [
+      'https://ghfast.top/' + rawUrl,
+      'https://gh-proxy.com/' + rawUrl,
+      'https://ghproxy.net/' + rawUrl,
+      rawUrl
+    ];
+
+    const tempZip = path.join(binDir, 'temp_release.zip');
+
+    function downloadFile(url) {{
+      return new Promise((resolve, reject) => {{
+        const client = url.startsWith('https') ? https : http;
+        const req = client.get(url, {{ headers: {{ 'User-Agent': 'BaihuApp-Downloader' }} }}, (res) => {{
+          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {{
+            return resolve(downloadFile(res.headers.location));
+          }}
+          if (res.statusCode !== 200) {{
+            return reject(new Error('HTTP status ' + res.statusCode));
+          }}
+          const fileStream = fs.createWriteStream(tempZip);
+          res.pipe(fileStream);
+          fileStream.on('finish', () => {{
+            fileStream.close(() => resolve(true));
+          }});
+        }});
+        req.on('error', reject);
+        req.setTimeout(30000, () => {{ req.destroy(); reject(new Error('Timeout')); }});
+      }});
+    }}
+
+    async function main() {{
+      console.log('>> 正在匹配系统架构: ' + osName + '-' + archName + ', 下载 Release 产物: ' + zipName);
+      let downloaded = false;
+      for (const m of mirrors) {{
+        try {{
+          console.log('>> 尝试下载源: ' + m);
+          await downloadFile(m);
+          if (fs.existsSync(tempZip) && fs.statSync(tempZip).size > 1000) {{
+            downloaded = true;
+            console.log('>> 下载成功，文件大小: ' + fs.statSync(tempZip).size + ' 字节');
+            break;
+          }}
+        }} catch (e) {{
+          console.log('>> 下载失败: ' + e.message + '，尝试下一镜像...');
+          if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip);
+        }}
+      }}
+
+      if (!downloaded) {{
+        console.error('>> 所有镜像源下载失败！');
+        process.exit(1);
+      }}
+
+      console.log('>> 正在解压 Release 包到 ' + binDir + '...');
+      try {{
+        if (process.platform === 'win32') {{
+          execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', {{ stdio: 'inherit' }});
+        }} else {{
+          try {{
+            execSync('unzip -o -q \\\"' + tempZip + '\\\" -d \\\"' + binDir + '\\\"', {{ stdio: 'inherit' }});
+          }} catch (_) {{
+            execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', {{ stdio: 'inherit' }});
+          }}
+        }}
+      }} catch (e) {{
+        console.error('>> 解压失败: ' + e.message);
+        process.exit(1);
+      }} finally {{
+        if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip);
+      }}
+
+      const execFile = path.join(binDir, 'Ray.BiliBiliTool.Console');
+      if (fs.existsSync(execFile)) {{
+        try {{ fs.chmodSync(execFile, 0o755); }} catch (_) {{}}
+      }}
+
+      console.log('>> BiliBiliToolPro 预编译包准备就绪！');
+    }}
+
+    main().catch(err => {{
+      console.error('>> 部署异常: ' + err.message);
+      process.exit(1);
+    }});
+    "
+
+  # [可选] 后置初始化命令：安装成功后自动执行
   post_install: |
     echo ">> 后置初始化准备就绪！"
 
   # [可选] 应用卸载清理
   uninstall: |
-    mise exec {mise_languages} -- node -e "['bin','main/src/Ray.BiliBiliTool.Console/obj'].forEach(p => require('fs').rmSync('{{app_dir}}/'+p, {{recursive: true, force: true}}))"
+    node -e "['bin'].forEach(p => require('fs').rmSync((process.env.APP_DIR || process.cwd()) + '/' + p, {{recursive: true, force: true}}))"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
@@ -431,7 +516,7 @@ env_schema:
     label: "精简容器兼容模式 (无ICU)"
     type: "boolean"
     default: true
-    description: "复刻 bili_task_base.sh 中的全局环境变量，解决跨平台与精简容器中 ICU 异常"
+    description: "解决精简容器/系统环境下缺失 libicu 导致的初始化问题"
 
 # ==============================================================================
 # 4. 任务生成与映射规则 (Sync Rules) —— 规则独立热更新，无须上游仓库 Git Push
@@ -442,8 +527,8 @@ sync_rules:
     timeout: 30                       # 默认超时（分钟）
     retry_count: 1                    # 失败重试次数
     retry_interval: 15                # 失败重试间隔（秒）
-    work_dir: "{{app_dir}}/bin"         # 运行已编译的产物目录，实现 0.1 秒极速启动
-    language: "{mise_languages}"              # 执行环境全部锁定为 {mise_languages}
+    work_dir: "{{app_dir}}/bin"         # 运行已解压的产物目录，实现 0.1 秒极速启动
+    language: "{mise_languages}"              # 执行环境锁定为 {mise_languages}
 
   # 任务清单定义（解耦上游注释，标准化任务编排）
   tasks:
