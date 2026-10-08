@@ -296,7 +296,7 @@ def generate_app_yaml(tasks, version="4.1.1", source_ref="4.1.1", last_commit=""
     standard_presets_str = "\n".join(standard_presets)
     hardcore_presets_str = "\n".join(hardcore_presets)
 
-    yaml_template = f'''# ==============================================================================
+    raw_template = """# ==============================================================================
 # 白虎面板应用规范定义文件 (Baihu Application Specification)
 # 应用名称: B站全自动化助手 (BiliBiliToolPro)
 # 规范版本: v1
@@ -306,10 +306,10 @@ def generate_app_yaml(tasks, version="4.1.1", source_ref="4.1.1", last_commit=""
 spec_version: "v1"
 id: "bilibili-tool-pro"
 name: "B站全自动化助手 (BiliBiliToolPro)"
-version: "{version}"
+version: "@@BH_SLOT_VERSION@@"
 author: "RayWangQvQ"
 category: "福利签到"
-last_commit: "{last_commit}"
+last_commit: "@@BH_SLOT_LAST_COMMIT@@"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "node@23"
@@ -339,7 +339,7 @@ sources:
 # ==============================================================================
 setup:
   # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
-  check: "node -e \\"const fs=require('fs'), p=require('path'); const bin=p.join(process.env.APP_DIR||process.cwd(),'bin'); if(!fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console')) && !fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console.exe'))){{process.exit(1)}}\\""
+  check: "node -e \\"const fs=require('fs'), p=require('path'); const bin=p.join(process.env.APP_DIR||process.cwd(),'bin'); if(!fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console')) && !fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console.exe'))){process.exit(1)}\\""
 
   # [必填] 依赖安装命令：根据当前操作系统架构拉取对应的官方 Release zip 并解压到 bin 目录
   install: |
@@ -348,17 +348,17 @@ setup:
     const path = require('path');
     const https = require('https');
     const http = require('http');
-    const {{ execSync }} = require('child_process');
+    const { execSync } = require('child_process');
 
     const appDir = process.env.APP_DIR || process.cwd();
     const binDir = path.join(appDir, 'bin');
-    fs.mkdirSync(binDir, {{ recursive: true }});
+    fs.mkdirSync(binDir, { recursive: true });
 
     let osName = process.platform === 'win32' ? 'win' : (process.platform === 'darwin' ? 'osx' : 'linux');
     let archName = process.arch === 'arm64' ? 'arm64' : (process.arch === 'arm' ? 'arm' : 'x64');
 
-    const version = '{version}';
-    const tag = '{source_ref}';
+    const version = '@@BH_SLOT_VERSION@@';
+    const tag = '@@BH_SLOT_TAG@@';
     const zipName = 'bilibili-tool-pro-v' + version + '-' + osName + '-' + archName + '.zip';
     const rawUrl = 'https://github.com/RayWangQvQ/BiliBiliToolPro/releases/download/' + tag + '/' + zipName;
 
@@ -371,80 +371,80 @@ setup:
 
     const tempZip = path.join(binDir, 'temp_release.zip');
 
-    function downloadFile(url) {{
-      return new Promise((resolve, reject) => {{
+    function downloadFile(url) {
+      return new Promise((resolve, reject) => {
         const client = url.startsWith('https') ? https : http;
-        const req = client.get(url, {{ headers: {{ 'User-Agent': 'BaihuApp-Downloader' }} }}, (res) => {{
-          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {{
+        const req = client.get(url, { headers: { 'User-Agent': 'BaihuApp-Downloader' } }, (res) => {
+          if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
             return resolve(downloadFile(res.headers.location));
-          }}
-          if (res.statusCode !== 200) {{
+          }
+          if (res.statusCode !== 200) {
             return reject(new Error('HTTP status ' + res.statusCode));
-          }}
+          }
           const fileStream = fs.createWriteStream(tempZip);
           res.pipe(fileStream);
-          fileStream.on('finish', () => {{
+          fileStream.on('finish', () => {
             fileStream.close(() => resolve(true));
-          }});
-        }});
+          });
+        });
         req.on('error', reject);
-        req.setTimeout(30000, () => {{ req.destroy(); reject(new Error('Timeout')); }});
-      }});
-    }}
+        req.setTimeout(30000, () => { req.destroy(); reject(new Error('Timeout')); });
+      });
+    }
 
-    async function main() {{
+    async function main() {
       console.log('>> 正在匹配系统架构: ' + osName + '-' + archName + ', 下载 Release 产物: ' + zipName);
       let downloaded = false;
-      for (const m of mirrors) {{
-        try {{
+      for (const m of mirrors) {
+        try {
           console.log('>> 尝试下载源: ' + m);
           await downloadFile(m);
-          if (fs.existsSync(tempZip) && fs.statSync(tempZip).size > 1000) {{
+          if (fs.existsSync(tempZip) && fs.statSync(tempZip).size > 1000) {
             downloaded = true;
             console.log('>> 下载成功，文件大小: ' + fs.statSync(tempZip).size + ' 字节');
             break;
-          }}
-        }} catch (e) {{
+          }
+        } catch (e) {
           console.log('>> 下载失败: ' + e.message + '，尝试下一镜像...');
           if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip);
-        }}
-      }}
+        }
+      }
 
-      if (!downloaded) {{
+      if (!downloaded) {
         console.error('>> 所有镜像源下载失败！');
         process.exit(1);
-      }}
+      }
 
       console.log('>> 正在解压 Release 包到 ' + binDir + '...');
-      try {{
-        if (process.platform === 'win32') {{
-          execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', {{ stdio: 'inherit' }});
-        }} else {{
-          try {{
-            execSync('unzip -o -q \\\"' + tempZip + '\\\" -d \\\"' + binDir + '\\\"', {{ stdio: 'inherit' }});
-          }} catch (_) {{
-            execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', {{ stdio: 'inherit' }});
-          }}
-        }}
-      }} catch (e) {{
+      try {
+        if (process.platform === 'win32') {
+          execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', { stdio: 'inherit' });
+        } else {
+          try {
+            execSync('unzip -o -q \\\"' + tempZip + '\\\" -d \\\"' + binDir + '\\\"', { stdio: 'inherit' });
+          } catch (_) {
+            execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', { stdio: 'inherit' });
+          }
+        }
+      } catch (e) {
         console.error('>> 解压失败: ' + e.message);
         process.exit(1);
-      }} finally {{
+      } finally {
         if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip);
-      }}
+      }
 
       const execFile = path.join(binDir, 'Ray.BiliBiliTool.Console');
-      if (fs.existsSync(execFile)) {{
-        try {{ fs.chmodSync(execFile, 0o755); }} catch (_) {{}}
-      }}
+      if (fs.existsSync(execFile)) {
+        try { fs.chmodSync(execFile, 0o755); } catch (_) {}
+      }
 
       console.log('>> BiliBiliToolPro 预编译包准备就绪！');
-    }}
+    }
 
-    main().catch(err => {{
+    main().catch(err => {
       console.error('>> 部署异常: ' + err.message);
       process.exit(1);
-    }});
+    });
     "
 
   # [可选] 后置初始化命令：安装成功后自动执行
@@ -453,7 +453,7 @@ setup:
 
   # [可选] 应用卸载清理
   uninstall: |
-    node -e "['bin'].forEach(p => require('fs').rmSync((process.env.APP_DIR || process.cwd()) + '/' + p, {{recursive: true, force: true}}))"
+    node -e "['bin'].forEach(p => require('fs').rmSync((process.env.APP_DIR || process.cwd()) + '/' + p, {recursive: true, force: true}))"
 
 # ==============================================================================
 # 3. 环境变量声明契约 (Env Schema) —— 驱动前端自动化渲染交互式表单
@@ -527,12 +527,12 @@ sync_rules:
     timeout: 30                       # 默认超时（分钟）
     retry_count: 1                    # 失败重试次数
     retry_interval: 15                # 失败重试间隔（秒）
-    work_dir: "{{app_dir}}/bin"         # 运行已解压的产物目录，实现 0.1 秒极速启动
-    language: "{mise_languages}"              # 执行环境锁定为 {mise_languages}
+    work_dir: "{app_dir}/bin"         # 运行已解压的产物目录，实现 0.1 秒极速启动
+    language: "{mise_languages}"      # 执行环境锁定为 {mise_languages}
 
   # 任务清单定义（解耦上游注释，标准化任务编排）
   tasks:
-{tasks_yaml_str}
+@@BH_SLOT_TASKS_YAML@@
 # ==============================================================================
 # 5. 使用场景模板 (Scenarios) —— 赋能用户一键选配，杜绝盲目生成冗余任务
 # ==============================================================================
@@ -542,22 +542,42 @@ scenarios:
     description: "仅执行每日登录与基础签到，耗时极短且完全防风控，适合只需保级的账号"
     default: false
     task_presets:
-{minimal_presets_str}
+@@BH_SLOT_MINIMAL_PRESETS@@
 
   - id: "standard"
     name: "标准日常满收益模式 (推荐)"
     description: "开启每日签到、自动投币、大会员大积分与漫画权益领取，最大化每日经验与收益"
     default: true
     task_presets:
-{standard_presets_str}
+@@BH_SLOT_STANDARD_PRESETS@@
 
   - id: "hardcore"
     name: "全天候极客全能模式"
     description: "开启全部自动化功能，包括每 15 分钟一次的高频直播间天选时刻自动巡检抽奖"
     task_presets:
-{hardcore_presets_str}
-'''
-    return yaml_template
+@@BH_SLOT_HARDCORE_PRESETS@@
+"""
+
+    slots = {
+        "@@BH_SLOT_VERSION@@": version,
+        "@@BH_SLOT_TAG@@": source_ref,
+        "@@BH_SLOT_LAST_COMMIT@@": last_commit,
+        "@@BH_SLOT_TASKS_YAML@@": tasks_yaml_str,
+        "@@BH_SLOT_MINIMAL_PRESETS@@": minimal_presets_str,
+        "@@BH_SLOT_STANDARD_PRESETS@@": standard_presets_str,
+        "@@BH_SLOT_HARDCORE_PRESETS@@": hardcore_presets_str,
+    }
+
+    result = raw_template
+    for slot, val in slots.items():
+        result = result.replace(slot, val)
+
+    # 严格校验：确保无任何遗漏插槽
+    if "@@BH_SLOT_" in result:
+        unfilled = re.findall(r"@@BH_SLOT_[A-Z_]+@@", result)
+        raise ValueError(f"检测到未填充的模板插槽: {unfilled}")
+
+    return result
 
 
 def main():
