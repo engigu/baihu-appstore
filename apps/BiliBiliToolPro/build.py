@@ -417,14 +417,26 @@ setup:
 
       console.log('>> 正在解压 Release 包到 ' + binDir + '...');
       try {
-        if (process.platform === 'win32') {
-          execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', { stdio: 'inherit' });
-        } else {
+        const tryCommands = [
+          'python3 -m zipfile -e \\\"' + tempZip + '\\\" \\\"' + binDir + '\\\"',
+          'python -m zipfile -e \\\"' + tempZip + '\\\" \\\"' + binDir + '\\\"',
+          'unzip -o -q \\\"' + tempZip + '\\\" -d \\\"' + binDir + '\\\"',
+          'tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"',
+          'powershell -Command \\\"Expand-Archive -Path \\\\\\\"' + tempZip + '\\\\\\\" -DestinationPath \\\\\\\"' + binDir + '\\\\\\\" -Force\\\"'
+        ];
+        let extracted = false;
+        let lastErr = '';
+        for (const cmd of tryCommands) {
           try {
-            execSync('unzip -o -q \\\"' + tempZip + '\\\" -d \\\"' + binDir + '\\\"', { stdio: 'inherit' });
-          } catch (_) {
-            execSync('tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"', { stdio: 'inherit' });
+            execSync(cmd, { stdio: 'ignore' });
+            extracted = true;
+            break;
+          } catch (err) {
+            lastErr = err.message;
           }
+        }
+        if (!extracted) {
+          throw new Error('解压失败，未找到可用解压工具: ' + lastErr);
         }
       } catch (e) {
         console.error('>> 解压失败: ' + e.message);
