@@ -59,6 +59,7 @@ setup:
   install: |
     mise install {mise_languages}
     echo ">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)..."
+    export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
     mise exec {mise_languages} -- dotnet publish -c Release -o "{app_dir}/bin" "{app_dir}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
     echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
