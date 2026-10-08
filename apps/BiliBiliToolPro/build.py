@@ -312,7 +312,7 @@ category: "福利签到"
 last_commit: "@@BH_SLOT_LAST_COMMIT@@"
 template:
   - tag: "BiliBiliToolPro"
-  - mise_languages: "node@23"
+  - mise_languages: "node@23.11.1"
 description: "基于 .NET 8 的 B站多功能全自动任务工具，支持每日经验投币、大会员权益礼包领取、天选时刻抽奖、粉丝牌助手与多账号管理"
 icon: "https://raw.githubusercontent.com/RayWangQvQ/BiliBiliToolPro/main/docs/images/logo.png"
 homepage: "https://github.com/RayWangQvQ/BiliBiliToolPro"
@@ -348,6 +348,7 @@ setup:
     const path = require('path');
     const https = require('https');
     const http = require('http');
+    const zlib = require('zlib');
     const { execSync } = require('child_process');
 
     const appDir = process.env.APP_DIR || process.cwd();
@@ -392,6 +393,54 @@ setup:
       });
     }
 
+    function extractZip(zipPath, targetDir) {
+      try {
+        const buf = fs.readFileSync(zipPath);
+        let pos = 0;
+        let count = 0;
+        while (pos < buf.length - 30) {
+          if (buf.readUInt32LE(pos) === 0x04034b50) {
+            const method = buf.readUInt16LE(pos + 8);
+            const compSize = buf.readUInt32LE(pos + 18);
+            const fnLen = buf.readUInt16LE(pos + 26);
+            const extraLen = buf.readUInt16LE(pos + 28);
+            const fn = buf.toString('utf8', pos + 30, pos + 30 + fnLen);
+            const dataStart = pos + 30 + fnLen + extraLen;
+            const data = buf.slice(dataStart, dataStart + compSize);
+            pos = dataStart + compSize;
+
+            const targetPath = path.join(targetDir, fn);
+            if (fn.endsWith('/') || fn.endsWith('\\\\')) {
+              fs.mkdirSync(targetPath, { recursive: true });
+            } else {
+              fs.mkdirSync(path.dirname(targetPath), { recursive: true });
+              const content = method === 8 ? zlib.inflateRawSync(data) : data;
+              fs.writeFileSync(targetPath, content);
+              count++;
+            }
+          } else {
+            pos++;
+          }
+        }
+        if (count > 0) return true;
+      } catch (_) {}
+
+      const tryCommands = [
+        'python3 -m zipfile -e \\\"' + zipPath + '\\\" \\\"' + targetDir + '\\\"',
+        'python -m zipfile -e \\\"' + zipPath + '\\\" \\\"' + targetDir + '\\\"',
+        'unzip -o -q \\\"' + zipPath + '\\\" -d \\\"' + targetDir + '\\\"',
+        'tar -xf \\\"' + zipPath + '\\\" -C \\\"' + targetDir + '\\\"',
+        'powershell -Command \\\"Expand-Archive -Path \\\\\\\"' + zipPath + '\\\\\\\" -DestinationPath \\\\\\\"' + targetDir + '\\\\\\\" -Force\\\"'
+      ];
+      for (const cmd of tryCommands) {
+        try {
+          execSync(cmd, { stdio: 'ignore' });
+          return true;
+        } catch (_) {}
+      }
+      throw new Error('解压失败，未找到可用解压工具');
+    }
+
     async function main() {
       console.log('>> 正在匹配系统架构: ' + osName + '-' + archName + ', 下载 Release 产物: ' + zipName);
       let downloaded = false;
@@ -417,27 +466,7 @@ setup:
 
       console.log('>> 正在解压 Release 包到 ' + binDir + '...');
       try {
-        const tryCommands = [
-          'python3 -m zipfile -e \\\"' + tempZip + '\\\" \\\"' + binDir + '\\\"',
-          'python -m zipfile -e \\\"' + tempZip + '\\\" \\\"' + binDir + '\\\"',
-          'unzip -o -q \\\"' + tempZip + '\\\" -d \\\"' + binDir + '\\\"',
-          'tar -xf \\\"' + tempZip + '\\\" -C \\\"' + binDir + '\\\"',
-          'powershell -Command \\\"Expand-Archive -Path \\\\\\\"' + tempZip + '\\\\\\\" -DestinationPath \\\\\\\"' + binDir + '\\\\\\\" -Force\\\"'
-        ];
-        let extracted = false;
-        let lastErr = '';
-        for (const cmd of tryCommands) {
-          try {
-            execSync(cmd, { stdio: 'ignore' });
-            extracted = true;
-            break;
-          } catch (err) {
-            lastErr = err.message;
-          }
-        }
-        if (!extracted) {
-          throw new Error('解压失败，未找到可用解压工具: ' + lastErr);
-        }
+        extractZip(tempZip, binDir);
       } catch (e) {
         console.error('>> 解压失败: ' + e.message);
         process.exit(1);
