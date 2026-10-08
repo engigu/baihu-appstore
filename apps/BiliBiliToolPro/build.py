@@ -69,7 +69,7 @@ def fetch_latest_release_info(proxy: str = "") -> dict:
 
 def clone_upstream_repo(proxy: str = "", branch_or_tag: str = "main") -> tempfile.TemporaryDirectory:
     """克隆上游仓库到临时目录（深度为 1 浅克隆，遇到网络波动自动尝试镜像加速）"""
-    proxies_to_try = [proxy] if proxy else ["", "https://gh-proxy.com/", "https://ghfast.top/"]
+    proxies_to_try = [proxy] if proxy else ["https://gh-proxy.com/", "https://ghfast.top/", ""]
 
     for p in proxies_to_try:
         tmp_dir = tempfile.TemporaryDirectory(prefix="baihu_bili_")
@@ -363,8 +363,8 @@ setup:
     const rawUrl = 'https://github.com/RayWangQvQ/BiliBiliToolPro/releases/download/' + tag + '/' + zipName;
 
     const mirrors = [
-      'https://ghfast.top/' + rawUrl,
       'https://gh-proxy.com/' + rawUrl,
+      'https://ghfast.top/' + rawUrl,
       'https://ghproxy.net/' + rawUrl,
       rawUrl
     ];

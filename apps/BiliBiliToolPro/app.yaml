@@ -65,8 +65,8 @@ setup:
     const rawUrl = 'https://github.com/RayWangQvQ/BiliBiliToolPro/releases/download/' + tag + '/' + zipName;
 
     const mirrors = [
-      'https://ghfast.top/' + rawUrl,
       'https://gh-proxy.com/' + rawUrl,
+      'https://ghfast.top/' + rawUrl,
       'https://ghproxy.net/' + rawUrl,
       rawUrl
     ];
