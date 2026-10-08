@@ -410,7 +410,7 @@ setup:
             pos = dataStart + compSize;
 
             const targetPath = path.join(targetDir, fn);
-            if (fn.endsWith('/') || fn.endsWith('\\\\')) {
+            if (fn.endsWith('/')) {
               fs.mkdirSync(targetPath, { recursive: true });
             } else {
               fs.mkdirSync(path.dirname(targetPath), { recursive: true });
@@ -429,8 +429,7 @@ setup:
         'python3 -m zipfile -e \\\"' + zipPath + '\\\" \\\"' + targetDir + '\\\"',
         'python -m zipfile -e \\\"' + zipPath + '\\\" \\\"' + targetDir + '\\\"',
         'unzip -o -q \\\"' + zipPath + '\\\" -d \\\"' + targetDir + '\\\"',
-        'tar -xf \\\"' + zipPath + '\\\" -C \\\"' + targetDir + '\\\"',
-        'powershell -Command \\\"Expand-Archive -Path \\\\\\\"' + zipPath + '\\\\\\\" -DestinationPath \\\\\\\"' + targetDir + '\\\\\\\" -Force\\\"'
+        'tar -xf \\\"' + zipPath + '\\\" -C \\\"' + targetDir + '\\\"'
       ];
       for (const cmd of tryCommands) {
         try {
