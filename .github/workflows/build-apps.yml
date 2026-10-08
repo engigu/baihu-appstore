@@ -56,24 +56,15 @@ jobs:
           APPS=$(python3 -c 'import os, json; print(json.dumps([os.path.join("apps", d, "app.yaml") for d in os.listdir("apps") if os.path.isfile(os.path.join("apps", d, "app.yaml"))]))')
           echo "matrix={\"app\": $APPS}" >> $GITHUB_OUTPUT
 
-      - name: Set up Go 1.26
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.26'
-
-      - name: Checkout Baihu Panel Engine
-        uses: actions/checkout@v4
-        with:
-          repository: 'engigu/baihu-panel'
-          ref: ${{ github.event.inputs.panel_branch || 'main' }}
-          path: 'baihu-panel-src'
-
-      - name: Build Baihu CLI Binary (Single Build)
+      - name: Download Latest Baihu Release Binary
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          cd baihu-panel-src
-          CGO_ENABLED=0 go build -o ../baihu ./main.go
-          cd ..
+          echo ">> 正在从 engigu/baihu-panel 下载最新官方 Release 预编译产物..."
+          gh release download --repo engigu/baihu-panel --pattern "baihu-linux-amd64.tar.gz" --output baihu-linux-amd64.tar.gz
+          tar -xzf baihu-linux-amd64.tar.gz
           chmod +x ./baihu
+          echo ">> 白虎 CLI 二进制准备就绪！"
 
       - name: Upload Baihu CLI Artifact
         uses: actions/upload-artifact@v4
