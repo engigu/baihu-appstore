@@ -129,9 +129,11 @@ def build_app(app_dir: Path, proxy: str = "") -> bool:
 def main():
     parser = argparse.ArgumentParser(description="白虎应用商店全量构建调度器")
     parser.add_argument("--apps-dir", default="apps", help="应用存放根目录路径")
+    parser.add_argument("--branch", default=os.getenv("GITHUB_REF_NAME", "main"), help="Git 分支名 (默认读取 GITHUB_REF_NAME 或 main)")
     parser.add_argument("--proxy", default="", help="GitHub 加速代理前缀 (可选)")
     args = parser.parse_args()
 
+    branch = args.branch or "main"
     root_dir = Path(__file__).resolve().parent
     apps_root = (root_dir / args.apps_dir).resolve()
 
@@ -143,6 +145,7 @@ def main():
     print("      白虎应用商店 (Baihu AppStore) 自动化构建调度")
     print("########################################################")
     print(f"应用目录: {apps_root}")
+    print(f"目标分支: {branch}")
     print(f"代理加速: {args.proxy or '未开启'}\n")
 
     # 忽略 web, docs, static 等前端或展示目录
@@ -185,13 +188,14 @@ def main():
             except Exception:
                 raw_text = ""
             meta["manifest_raw"] = raw_text
-            meta["manifest_url"] = f"https://raw.githubusercontent.com/engigu/baihu-appstore/main/apps/{app_dir.name}/{target_yaml.name}"
+            meta["manifest_url"] = f"https://raw.githubusercontent.com/engigu/baihu-appstore/{branch}/apps/{app_dir.name}/{target_yaml.name}"
             meta["updated_at"] = build_time_utc8
             apps_index.append(meta)
 
     # 3. 聚合输出 apps.json 全局索引
     index_data = {
         "version": "v1",
+        "branch": branch,
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "generated_at_utc8": build_time_utc8,
         "build_time": build_time_utc8,
@@ -205,7 +209,7 @@ def main():
     # 4. 向 jsDelivr 发起 Purge 刷新全球 CDN 缓存请求
     try:
         import urllib.request
-        purge_url = "https://purge.jsdelivr.net/gh/engigu/baihu-appstore@main/apps.json"
+        purge_url = f"https://purge.jsdelivr.net/gh/engigu/baihu-appstore@{branch}/apps.json"
         req = urllib.request.Request(purge_url, headers={"User-Agent": "BaihuAppStoreBuilder/1.0"})
         with urllib.request.urlopen(req, timeout=5) as resp:
             if resp.status == 200:

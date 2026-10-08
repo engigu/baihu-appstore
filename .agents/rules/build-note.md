@@ -172,6 +172,9 @@ trigger: always_on
 3. **构建执行规则（重要）**：
    - **严禁在本地手动执行 `build.py`**；
    - 所有的构建、生成与全量索引统一交由 GitHub Actions (CI/CD) 在远端流水线中自动化触发与完成。
+4. **Git 同步与冲突解决规则（针对 `apps.json`）**：
+   - `apps.json` 作为全量聚合索引，由远端 GitHub Actions 在构建流水线中自动生成并回推；
+   - 本地执行 `git pull` 或 `git pull --rebase` 时若 `apps.json` 发生冲突，**一律以远程（Remote / theirs）为准**（如 `git checkout --theirs apps.json`），无需手动合并；本地只需专注维护各应用的 `app.yaml` 与 `build.py`。
 ## 九、 节点物理顺序与扩展规则 (Key Order Rules)
 
 在编写、解析、生成或序列化 `app.yaml` 文本时，根节点的物理出现顺序必须严格遵循白虎规范 v1 的固定优先级规则（从前至后依次为）：

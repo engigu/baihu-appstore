@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
     paths:
       - 'apps/**'
       - 'build-all.py'
@@ -12,6 +13,7 @@ on:
   pull_request:
     branches:
       - main
+      - dev
     paths:
       - 'apps/**'
       - 'build-all.py'
@@ -142,7 +144,7 @@ jobs:
 
       - name: Run Global AppStore Builder
         run: |
-          python build-all.py
+          python build-all.py --branch "${GITHUB_REF_NAME:-main}"
 
       - name: Commit and Push Changes (Push & Dispatch Only)
         if: github.event_name != 'pull_request'
@@ -152,14 +154,15 @@ jobs:
           git add apps/ apps.json
           if ! git diff --staged --quiet; then
             git commit -m "chore(auto-build): 自动构建更新应用清单与全局索引 [skip ci]"
-            git pull --rebase origin main
-            git push origin main
+            TARGET_BRANCH="${GITHUB_REF_NAME:-main}"
+            git pull --rebase origin "$TARGET_BRANCH"
+            git push origin "$TARGET_BRANCH"
           else
             echo ">> 没有检测到应用清单变动，无需推送提交。"
           fi
 
       - name: Prepare Pages Artifact
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
         run: |
           mkdir -p _site
           cp apps.json _site/
@@ -167,7 +170,7 @@ jobs:
           cp -r apps/* _site/apps/ 2>/dev/null || true
 
       - name: Upload Pages Artifact
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref_name == 'main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
@@ -182,7 +185,7 @@ jobs:
 
   deploy:
     name: Deploy to GitHub Pages
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref_name == 'main'
     needs: build
     environment:
       name: github-pages
@@ -196,4 +199,6 @@ jobs:
       - name: Purge jsDelivr CDN Cache
         run: |
           echo ">> 正在强刷 jsDelivr CDN 全球节点缓存..."
-          curl -s https://purge.jsdelivr.net/gh/engigu/baihu-appstore@main/apps.json || true
+          curl -s "https://purge.jsdelivr.net/gh/engigu/baihu-appstore@${GITHUB_REF_NAME:-main}/apps.json" || true
+
+

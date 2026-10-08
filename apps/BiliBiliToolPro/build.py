@@ -26,7 +26,48 @@ UPSTREAM_REPO = "https://github.com/RayWangQvQ/BiliBiliToolPro.git"
 UPSTREAM_BRANCH = "main"
 
 
-def clone_upstream_repo(proxy: str = "") -> tempfile.TemporaryDirectory:
+def fetch_latest_release_info(proxy: str = "") -> dict:
+    """尝试通过 GitHub API 获取最新 Release 版本号与 Tag"""
+    import urllib.request
+    import json
+
+    api_url = "https://api.github.com/repos/RayWangQvQ/BiliBiliToolPro/releases/latest"
+    headers = {"User-Agent": "BaihuAppStore-Builder", "Accept": "application/vnd.github.v3+json"}
+    
+    # 优先尝试 gh CLI
+    try:
+        res = subprocess.run(
+            ["gh", "api", "repos/RayWangQvQ/BiliBiliToolPro/releases/latest"],
+            capture_output=True,
+            text=True
+        )
+        if res.returncode == 0 and res.stdout.strip():
+            data = json.loads(res.stdout)
+            tag = data.get("tag_name", "").strip()
+            published_at = data.get("published_at", "").strip()
+            if tag:
+                clean_ver = tag.lstrip("vV")
+                return {"version": clean_ver, "tag": tag, "published_at": published_at}
+    except Exception:
+        pass
+
+    # 次选 urllib 直连获取
+    try:
+        req = urllib.request.Request(api_url, headers=headers)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            tag = data.get("tag_name", "").strip()
+            published_at = data.get("published_at", "").strip()
+            if tag:
+                clean_ver = tag.lstrip("vV")
+                return {"version": clean_ver, "tag": tag, "published_at": published_at}
+    except Exception:
+        pass
+
+    return {}
+
+
+def clone_upstream_repo(proxy: str = "", branch_or_tag: str = "main") -> tempfile.TemporaryDirectory:
     """克隆上游仓库到临时目录（深度为 1 浅克隆，遇到网络波动自动尝试镜像加速）"""
     proxies_to_try = [proxy] if proxy else ["", "https://gh-proxy.com/", "https://ghfast.top/"]
 
@@ -37,11 +78,11 @@ def clone_upstream_repo(proxy: str = "") -> tempfile.TemporaryDirectory:
             proxy_clean = p.rstrip("/") + "/"
             repo_url = f"{proxy_clean}{UPSTREAM_REPO}"
 
-        print(f"[克隆] 正在尝试拉取上游最新仓库: {repo_url} (分支: {UPSTREAM_BRANCH})...")
+        print(f"[克隆] 正在尝试拉取上游仓库: {repo_url} (分支/标签: {branch_or_tag})...")
         cmd = [
             "git", "clone",
             "--depth", "1",
-            "--branch", UPSTREAM_BRANCH,
+            "--branch", branch_or_tag,
             repo_url,
             tmp_dir.name
         ]
@@ -200,7 +241,22 @@ def get_repo_last_commit_time(repo_dir: Path) -> str:
     return ""
 
 
-def generate_app_yaml(tasks, last_commit=""):
+def get_repo_version(repo_dir: Path, fallback_version: str = "4.1.1") -> str:
+    """从 common.props 文件提取真实版本号"""
+    if repo_dir:
+        props_file = repo_dir / "common.props"
+        if props_file.exists():
+            try:
+                content = props_file.read_text(encoding="utf-8")
+                match = re.search(r"<Version>(.*?)</Version>", content)
+                if match and match.group(1).strip():
+                    return match.group(1).strip()
+            except Exception:
+                pass
+    return fallback_version
+
+
+def generate_app_yaml(tasks, version="4.1.1", source_ref="4.1.1", last_commit=""):
     """把提取出来的 tasks 列表融合填充进规范的标准 YAML 模板"""
     mise_languages = "{mise_languages}"
     tasks_yaml_lines = []
@@ -251,7 +307,7 @@ def generate_app_yaml(tasks, last_commit=""):
 spec_version: "v1"
 id: "bilibili-tool-pro"
 name: "B站全自动化助手 (BiliBiliToolPro)"
-version: "2.1.0"
+version: "{version}"
 author: "RayWangQvQ"
 category: "福利签到"
 last_commit: "{last_commit}"
@@ -281,7 +337,7 @@ sources:
   - id: "main"                        # [必填] 源唯一标识符（在下方 tasks 中通过 source: "main" 关联）
     source_type: "git"                # 对应 --source-type: git (Git仓库) 或 url (单文件下载)
     source_url: "{UPSTREAM_REPO}" # 对应 --source-url: 上游开源项目地址
-    branch: "{UPSTREAM_BRANCH}"       # 对应 --branch: 指定主分支
+    branch: "{source_ref}"            # 对应 --branch: 动态锁定上游 Release 标签或分支
     path: ""                          # 对应 --path: 留空全量检出
     single_file: false                # 对应 --single-file: 仓库模式
     proxy: "ghproxy"                  # 对应 --proxy: none / ghproxy / mirror / custom
@@ -302,6 +358,7 @@ setup:
   install: |
     mise install {mise_languages}
     echo ">> 正在使用 {mise_languages} 预编译 BiliBiliToolPro (Release)..."
+    export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
     mise exec {mise_languages} -- dotnet publish -c Release -o "{{app_dir}}/bin" "{{app_dir}}/main/src/Ray.BiliBiliTool.Console/Ray.BiliBiliTool.Console.csproj"
     echo ">> 预编译就绪，运行时将 0.1s 极速启动！"
 
@@ -431,21 +488,32 @@ def main():
 
     tmp_dir_handle = None
     repo_dir = None
+    proxy = args.proxy or os.environ.get("GH_PROXY", "")
+
+    # 1. 尝试从上游 GitHub Release 获取最新发布版本信息
+    print(f"[版本] 正在检测上游最新 Release 信息...")
+    release_info = fetch_latest_release_info(proxy)
+    latest_version = release_info.get("version", "4.1.1")
+    latest_tag = release_info.get("tag", latest_version)
+    published_at = release_info.get("published_at", "")
+    print(f"[版本] 上游最新 Release 版本: {latest_version} (Tag: {latest_tag})")
 
     if args.source_dir and Path(args.source_dir).exists():
         repo_dir = Path(args.source_dir).resolve()
         print(f"[源目录] 使用指定的本地目录: {repo_dir}")
-    elif not os.environ.get("GITHUB_ACTIONS") and Path("F:/workspace/BiliBiliToolPro").exists():
-        repo_dir = Path("F:/workspace/BiliBiliToolPro").resolve()
-        print(f"[源目录] 本地开发环境自动命中源码缓存: {repo_dir}")
     else:
-        # 云端 CI/CD 或无本地缓存时，自动通过 git 从上游克隆
-        proxy = args.proxy or os.environ.get("GH_PROXY", "")
-        tmp_dir_handle = clone_upstream_repo(proxy)
+        # 优先按最新 Release Tag 进行克隆，若失败则回退至 UPSTREAM_BRANCH
+        tmp_dir_handle = clone_upstream_repo(proxy, branch_or_tag=latest_tag)
+        if not tmp_dir_handle and latest_tag != UPSTREAM_BRANCH:
+            print(f"[回退] 尝试从分支 {UPSTREAM_BRANCH} 克隆...")
+            tmp_dir_handle = clone_upstream_repo(proxy, branch_or_tag=UPSTREAM_BRANCH)
         if tmp_dir_handle:
             repo_dir = Path(tmp_dir_handle.name)
 
     try:
+        # 优先读取仓库内的 props 版本确认，若没有则使用 Release 版本
+        actual_version = get_repo_version(repo_dir, fallback_version=latest_version)
+
         if repo_dir:
             print(f"[扫描] 正在解析 baihu/qinglong 任务配置...")
             tasks = parse_tasks_from_repo(repo_dir)
@@ -462,8 +530,13 @@ def main():
             output_path = Path(__file__).resolve().parent / output_path
 
         print(f"\n[生成] 正在组装白虎规范应用配置清单 (v1)...")
-        last_commit = get_repo_last_commit_time(repo_dir)
-        yaml_content = generate_app_yaml(tasks, last_commit=last_commit)
+        last_commit = get_repo_last_commit_time(repo_dir) or published_at
+        yaml_content = generate_app_yaml(
+            tasks,
+            version=actual_version,
+            source_ref=latest_tag,
+            last_commit=last_commit
+        )
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(yaml_content, encoding="utf-8")
