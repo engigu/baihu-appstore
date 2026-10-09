@@ -131,8 +131,11 @@ jobs:
           echo ">> 当前已安装任务列表:"
           ./baihu task list
 
-          # 从已安装的受控任务中智能提取 1 条进行测试 (优先选取 enabled=1 的任务)
-          TASK_ID=$(python3 -c "import sqlite3; conn=sqlite3.connect('./baihu_ci_test.db'); c=conn.cursor(); c.execute(\"SELECT id FROM baihu_tasks WHERE type='task' ORDER BY enabled DESC LIMIT 1\"); r=c.fetchone(); print(r[0] if r else '')")
+          # 从 ./baihu task list 输出中智能提取已安装的受控子任务 ID (优先选取启用的 task)
+          TASK_ID=$(./baihu task list 2>/dev/null | grep -E "\|\s*task\s*\|\s*启用" | head -n 1 | awk '{print $1}')
+          if [ -z "$TASK_ID" ]; then
+            TASK_ID=$(./baihu task list 2>/dev/null | grep -E "\|\s*task\s*\|" | head -n 1 | awk '{print $1}')
+          fi
 
           if [ -n "$TASK_ID" ]; then
             echo "=================================================="
