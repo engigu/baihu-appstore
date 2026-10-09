@@ -41,7 +41,7 @@ sources:
 # ==============================================================================
 setup:
   # [可选] 依赖快速探测：已就绪时毫秒级跳过安装
-  check: "node -e \"const fs=require('fs'), p=require('path'); const bin=p.join(process.env.APP_DIR||process.cwd(),'bin'); if(!fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console')) && !fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console.exe'))){ try{ const subDirs=fs.readdirSync(bin).filter(f=>fs.statSync(p.join(bin,f)).isDirectory()); for(const sub of subDirs){ const sp=p.join(bin,sub); if(fs.existsSync(p.join(sp,'Ray.BiliBiliTool.Console'))||fs.existsSync(p.join(sp,'Ray.BiliBiliTool.Console.exe'))){ for(const item of fs.readdirSync(sp)){ const s=p.join(sp,item), d=p.join(bin,item); if(fs.existsSync(d)) fs.rmSync(d,{recursive:true,force:true}); fs.renameSync(s,d); } try{fs.rmdirSync(sp)}catch(_){} break; } } }catch(_){} } if(!fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console')) && !fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console.exe'))){process.exit(1)} else { const ef=p.join(bin,'Ray.BiliBiliTool.Console'); if(fs.existsSync(ef)){try{fs.chmodSync(ef,0o755)}catch(_){}} }\""
+  check: "node -e \"const fs=require('fs'), p=require('path'); const bin=p.join(process.env.APP_DIR||process.cwd(),'bin'); if(fs.existsSync(bin)){ try{ const subDirs=fs.readdirSync(bin).filter(f=>fs.statSync(p.join(bin,f)).isDirectory()); for(const sub of subDirs){ const sp=p.join(bin,sub); if(fs.existsSync(p.join(sp,'Ray.BiliBiliTool.Console'))||fs.existsSync(p.join(sp,'Ray.BiliBiliTool.Console.exe'))){ for(const item of fs.readdirSync(sp)){ const s=p.join(sp,item), d=p.join(bin,item); if(fs.existsSync(d)) fs.rmSync(d,{recursive:true,force:true}); fs.renameSync(s,d); } } if(['linux-x64','linux-arm64','win-x64','win-arm64','osx-x64','osx-arm64'].includes(sub.toLowerCase())||/^(linux|win|osx|darwin)/i.test(sub)){ try{fs.rmSync(sp,{recursive:true,force:true})}catch(_){} } } }catch(_){} } if(!fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console')) && !fs.existsSync(p.join(bin,'Ray.BiliBiliTool.Console.exe'))){process.exit(1)} else { const ef=p.join(bin,'Ray.BiliBiliTool.Console'); if(fs.existsSync(ef)){try{fs.chmodSync(ef,0o755)}catch(_){}} }\""
 
   # [必填] 依赖安装命令：根据当前操作系统架构拉取对应的官方 Release zip 并解压到 bin 目录
   install: |
@@ -175,32 +175,29 @@ setup:
         if (fs.existsSync(tempZip)) fs.unlinkSync(tempZip);
       }
 
-      // 拍平嵌套目录：如果解压后产物位于 linux-x64/、win-x64/ 等子目录中，自动移动至 bin 根目录
-      let execFile = path.join(binDir, 'Ray.BiliBiliTool.Console');
-      let execExe = path.join(binDir, 'Ray.BiliBiliTool.Console.exe');
-      if (!fs.existsSync(execFile) && !fs.existsSync(execExe)) {
-        const subDirs = fs.readdirSync(binDir).filter(f => {
-          try {
-            return fs.statSync(path.join(binDir, f)).isDirectory();
-          } catch (_) {
-            return false;
-          }
-        });
-        for (const sub of subDirs) {
-          const subPath = path.join(binDir, sub);
-          if (fs.existsSync(path.join(subPath, 'Ray.BiliBiliTool.Console')) || fs.existsSync(path.join(subPath, 'Ray.BiliBiliTool.Console.exe'))) {
-            console.log('>> 拍平 Release 架构目录: ' + sub + ' -> bin');
-            for (const item of fs.readdirSync(subPath)) {
-              const src = path.join(subPath, item);
-              const dest = path.join(binDir, item);
-              if (fs.existsSync(dest)) {
-                fs.rmSync(dest, { recursive: true, force: true });
-              }
-              fs.renameSync(src, dest);
+      // 拍平嵌套目录并清理多余架构子目录 (linux-x64, win-x64 等)
+      const subDirs = fs.readdirSync(binDir).filter(f => {
+        try {
+          return fs.statSync(path.join(binDir, f)).isDirectory();
+        } catch (_) {
+          return false;
+        }
+      });
+      for (const sub of subDirs) {
+        const subPath = path.join(binDir, sub);
+        if (fs.existsSync(path.join(subPath, 'Ray.BiliBiliTool.Console')) || fs.existsSync(path.join(subPath, 'Ray.BiliBiliTool.Console.exe'))) {
+          console.log('>> 拍平 Release 架构目录: ' + sub + ' -> bin');
+          for (const item of fs.readdirSync(subPath)) {
+            const src = path.join(subPath, item);
+            const dest = path.join(binDir, item);
+            if (fs.existsSync(dest)) {
+              fs.rmSync(dest, { recursive: true, force: true });
             }
-            try { fs.rmdirSync(subPath); } catch (_) {}
-            break;
+            fs.renameSync(src, dest);
           }
+        }
+        if (['linux-x64', 'linux-arm64', 'win-x64', 'win-arm64', 'osx-x64', 'osx-arm64'].includes(sub.toLowerCase()) || /^(linux|win|osx|darwin)/i.test(sub) || sub.toLowerCase().includes(osName)) {
+          try { fs.rmSync(subPath, { recursive: true, force: true }); } catch (_) {}
         }
       }
 
