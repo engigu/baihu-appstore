@@ -108,6 +108,74 @@ jobs:
           echo "=================================================="
           ./baihu app apply "${{ matrix.app }}" --force-setup
 
+      - name: Smoke-Test Installed Task with Baihu CLI
+        run: |
+          export DB_TYPE="sqlite"
+          export DB_DSN="./baihu_ci_test.db"
+
+          echo "=================================================="
+          echo ">> 启动轻量白虎后台服务进行任务原生测试"
+          echo "=================================================="
+          ./baihu server &
+          SERVER_PID=$!
+
+          # 轮询探测后台服务是否就绪
+          for i in {1..15}; do
+            if ./baihu task list >/dev/null 2>&1; then
+              break
+            fi
+            sleep 1
+          done
+
+          # 输出当前已安装任务清单
+          echo ">> 当前已安装任务列表:"
+          ./baihu task list
+
+          # 从已安装的受控任务中智能提取 1 条进行测试 (优先选取 enabled=1 的任务)
+          TASK_ID=$(python3 -c "import sqlite3; conn=sqlite3.connect('./baihu_ci_test.db'); c=conn.cursor(); c.execute(\"SELECT id FROM baihu_tasks WHERE type='task' ORDER BY enabled DESC LIMIT 1\"); r=c.fetchone(); print(r[0] if r else '')")
+
+          if [ -n "$TASK_ID" ]; then
+            echo "=================================================="
+            echo ">> 智能选定已安装任务 ID: $TASK_ID"
+            echo ">> 通过白虎原生 CLI 触发任务执行: ./baihu task run $TASK_ID"
+            echo "=================================================="
+            ./baihu task run "$TASK_ID"
+
+            # 轮询等待任务产生执行日志 (最多等待 15 秒)
+            echo ">> 正在等待任务执行并回显日志..."
+            STATUS_OUTPUT=""
+            for i in {1..15}; do
+              sleep 1
+              STATUS_OUTPUT=$(./baihu task status "$TASK_ID" 2>&1 || true)
+              if echo "$STATUS_OUTPUT" | grep -q "日志记录:"; then
+                if ! echo "$STATUS_OUTPUT" | grep -q "最终状态: 运行中"; then
+                  break
+                fi
+              fi
+            done
+
+            echo ">> [白虎原生任务执行状态与日志详情]:"
+            echo "$STATUS_OUTPUT"
+
+            # 核心判定：只抓基本文件缺失或命令不存在的系统级故障，业务逻辑报错安全放行
+            if echo "$STATUS_OUTPUT" | grep -Eiq "couldn't exec process: No such file|No such file or directory|command not found|Cannot find module|not found in \$PATH|Permission denied"; then
+              echo "==================================================" >&2
+              echo "[FATAL] 任务健全性校验失败：检测到可执行文件或入口脚本缺失！" >&2
+              echo "==================================================" >&2
+              kill $SERVER_PID 2>/dev/null || true
+              exit 1
+            fi
+
+            echo "=================================================="
+            echo ">> ✓ 任务已成功拉起运行！基本文件完备 (业务层报错已正常忽略)"
+            echo "=================================================="
+          else
+            echo ">> 提示: 当前应用未注册受控子任务，跳过单任务测试。"
+          fi
+
+          # 优雅关闭测试 server
+          kill $SERVER_PID 2>/dev/null || true
+
   # 步骤 3: 校验全部通过后，构建索引、提交代码并部署 Pages
   build:
     name: Build All & Package
