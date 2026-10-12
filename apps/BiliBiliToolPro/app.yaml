@@ -8,10 +8,10 @@
 spec_version: "v1"
 id: "bilibili-tool-pro"
 name: "B站全自动化助手 (BiliBiliToolPro)"
-version: "4.1.1"
+version: "4.2.0"
 author: "RayWangQvQ"
 category: "福利签到"
-last_commit: "2026-09-29T13:19:31+08:00"
+last_commit: "2026-10-11T14:46:03+08:00"
 template:
   - tag: "BiliBiliToolPro"
   - mise_languages: "node@23.11.1"
@@ -60,8 +60,8 @@ setup:
     let osName = process.platform === 'win32' ? 'win' : (process.platform === 'darwin' ? 'osx' : 'linux');
     let archName = process.arch === 'arm64' ? 'arm64' : (process.arch === 'arm' ? 'arm' : 'x64');
 
-    const version = '4.1.1';
-    const tag = '4.1.1';
+    const version = '4.2.0';
+    const tag = '4.2.0';
     const zipName = 'bilibili-tool-pro-v' + version + '-' + osName + '-' + archName + '.zip';
     const rawUrl = 'https://github.com/RayWangQvQ/BiliBiliToolPro/releases/download/' + tag + '/' + zipName;
 
