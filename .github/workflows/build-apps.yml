@@ -40,21 +40,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # 步骤 1: 扫描所有 app 并单次编译 Baihu CLI 二进制供所有矩阵节点共享
-  prepare:
-    name: Prepare App Matrix & Build CLI
+  # 步骤 1: 运行全量构建器拉取上游最新发布生成 app.yaml/apps.json，并编译/拉取 Baihu CLI
+  build:
+    name: Build Latest Apps & Matrix
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - name: Checkout AppStore Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Generate Matrix Config
-        id: set-matrix
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python Dependencies
         run: |
-          APPS=$(python3 -c 'import os, json; print(json.dumps([os.path.join("apps", d, "app.yaml") for d in os.listdir("apps") if os.path.isfile(os.path.join("apps", d, "app.yaml"))]))')
-          echo "matrix={\"app\": $APPS}" >> $GITHUB_OUTPUT
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
 
       - name: Download Latest Baihu Release Binary
         env:
@@ -68,24 +79,48 @@ jobs:
           echo ">> 白虎 CLI 二进制准备就绪！"
           ./baihu --version || ./baihu -v || true
 
-      - name: Upload Baihu CLI Artifact
+      - name: Run Global AppStore Builder
+        run: |
+          python build-all.py --branch "${GITHUB_REF_NAME:-main}"
+
+      - name: Generate Matrix Config
+        id: set-matrix
+        run: |
+          APPS=$(python3 -c 'import os, json; print(json.dumps([os.path.join("apps", d, "app.yaml") for d in os.listdir("apps") if os.path.isfile(os.path.join("apps", d, "app.yaml"))]))')
+          echo "matrix={\"app\": $APPS}" >> $GITHUB_OUTPUT
+
+      - name: Upload Baihu CLI Binary
         uses: actions/upload-artifact@v4
         with:
           name: baihu-cli-binary
           path: ./baihu
 
-  # 步骤 2: 矩阵并行对每个应用运行 CLI 硬核验证 (仅需下载编译好的 CLI，无重复编译)
+      - name: Upload Built AppStore Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: appstore-workspace
+          path: |
+            apps.json
+            apps/**/app.yaml
+
+  # 步骤 2: 矩阵并行对刚构建出的最新应用版本运行真实部署与烟测 (严密质量门禁)
   validate:
     name: Validate (${{ matrix.app }})
-    needs: prepare
+    needs: build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: true
-      matrix: ${{ fromJson(needs.prepare.outputs.matrix) }}
+      matrix: ${{ fromJson(needs.build.outputs.matrix) }}
 
     steps:
       - name: Checkout AppStore Repository
         uses: actions/checkout@v4
+
+      - name: Download Built AppStore Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: appstore-workspace
+          path: ./
 
       - name: Download Baihu CLI Binary
         uses: actions/download-artifact@v4
@@ -104,7 +139,7 @@ jobs:
           export DB_TYPE="sqlite"
           export DB_DSN="./baihu_ci_test.db"
           echo "=================================================="
-          echo ">> 正在对应用进行矩阵并行硬核部署测试: ${{ matrix.app }}"
+          echo ">> 正在对最新构建产物进行矩阵并行部署测试: ${{ matrix.app }}"
           echo "=================================================="
           ./baihu app apply "${{ matrix.app }}" --force-setup
 
@@ -113,10 +148,10 @@ jobs:
           chmod +x tools/smoke_test.sh
           ./tools/smoke_test.sh
 
-  # 步骤 3: 校验全部通过后，构建索引、提交代码并部署 Pages
-  build:
-    name: Build All & Package
-    needs: validate
+  # 步骤 3: 只有当最新应用版本验证全部通过后，才正式提交代码并准备 Pages 产物
+  publish:
+    name: Commit Changes & Package
+    needs: [build, validate]
     runs-on: ubuntu-latest
 
     steps:
@@ -125,24 +160,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - name: Download Built AppStore Artifact
+        uses: actions/download-artifact@v4
         with:
-          python-version: '3.12'
-
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-
-      - name: Set up Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Run Global AppStore Builder
-        run: |
-          python build-all.py --branch "${GITHUB_REF_NAME:-main}"
+          name: appstore-workspace
+          path: ./
 
       - name: Commit and Push Changes (Push & Dispatch Only)
         if: github.event_name != 'pull_request'
@@ -173,7 +195,7 @@ jobs:
         with:
           path: _site
 
-      - name: Upload Build Artifacts
+      - name: Upload Dist Artifact
         uses: actions/upload-artifact@v4
         with:
           name: appstore-dist
@@ -181,10 +203,11 @@ jobs:
             apps.json
             apps/**/app.yaml
 
+  # 步骤 4: 部署到 GitHub Pages 并刷新 CDN 缓存
   deploy:
     name: Deploy to GitHub Pages
     if: github.event_name != 'pull_request' && github.ref_name == 'main'
-    needs: build
+    needs: publish
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -198,5 +221,3 @@ jobs:
         run: |
           echo ">> 正在强刷 jsDelivr CDN 全球节点缓存..."
           curl -s "https://purge.jsdelivr.net/gh/engigu/baihu-appstore@${GITHUB_REF_NAME:-main}/apps.json" || true
-
-
