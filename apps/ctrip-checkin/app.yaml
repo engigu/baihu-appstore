@@ -1,0 +1,58 @@
+spec_version: v1
+id: ctrip-checkin
+name: 携程每日签到
+version: 1.0.1
+author: OneBigMoon
+category: 福利签到
+template:
+- tag: CtripCheckin
+- mise_languages: python@3.13.12
+description: 使用本人携程 Cookie 执行每日签到并报告连续天数、积分；凭据过期时返回失败。
+homepage: https://github.com/OneBigMoon/baihu-checkins
+schedule_opts:
+  timeout: 5
+  retry_count: 0
+  retry_interval: 0
+sources:
+- id: main
+  source_type: git
+  source_url: https://github.com/OneBigMoon/baihu-checkins.git
+  branch: v1.0.1
+  path: ''
+  single_file: false
+  proxy: none
+  target_path: main
+setup:
+  check: mise exec {mise_languages} -- python --version
+  install: mise install {mise_languages}
+env_schema:
+- key: CTRIP_COOKIE
+  label: 携程 Cookie
+  type: secret
+  required: true
+  description: 登录 m.ctrip.com 后，从本人签到页面的网络请求复制完整 Cookie；只在安装表单填写。
+  placeholder: ''
+sync_rules:
+  defaults:
+    timeout: 5
+    retry_count: 0
+    retry_interval: 0
+    work_dir: '{app_dir}/main'
+    language: '{mise_languages}'
+  tasks:
+  - id: daily
+    name: 携程每日签到
+    source: main
+    language: '{mise_languages}'
+    command: python ctrip_checkin.py
+    default_cron: 0 10 9 * * *
+    enabled: true
+    remark: 需有效 CTRIP_COOKIE；已签到视为成功，登录失效时请更新凭据。
+scenarios:
+- id: standard
+  name: 每日签到
+  description: 每天运行已启用的任务；遇登录验证时需本人处理。
+  default: true
+  task_presets:
+    daily:
+      enabled: true
