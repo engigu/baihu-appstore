@@ -1,0 +1,64 @@
+spec_version: v1
+id: tieba-checkin
+name: 百度贴吧每日签到
+version: 1.0.1
+author: OneBigMoon
+category: 福利签到
+template:
+- tag: TiebaCheckin
+- mise_languages: python@3.13.12
+description: 按安装者填写的吧名列表签到；分别报告成功、跳过和失败，未加入或等级不足的吧单独跳过。
+homepage: https://github.com/OneBigMoon/baihu-checkins
+schedule_opts:
+  timeout: 5
+  retry_count: 0
+  retry_interval: 0
+sources:
+- id: main
+  source_type: git
+  source_url: https://github.com/OneBigMoon/baihu-checkins.git
+  branch: v1.0.1
+  path: ''
+  single_file: false
+  proxy: none
+  target_path: main
+setup:
+  check: mise exec {mise_languages} -- python --version
+  install: mise install {mise_languages}
+env_schema:
+- key: TIEBA_COOKIE
+  label: 百度贴吧 Cookie
+  type: secret
+  required: true
+  description: 登录 tieba.baidu.com 后，从本人页面请求复制完整 Cookie。
+  placeholder: ''
+- key: TIEBA_FORUMS
+  label: 签到吧名
+  type: string
+  required: true
+  description: 英文逗号分隔；填写站点中的吧名，不额外添加“吧”字。不会自动关注新贴吧。
+  placeholder: 吧名一,吧名二
+sync_rules:
+  defaults:
+    timeout: 5
+    retry_count: 0
+    retry_interval: 0
+    work_dir: '{app_dir}/main'
+    language: '{mise_languages}'
+  tasks:
+  - id: daily
+    name: 百度贴吧每日签到
+    source: main
+    language: '{mise_languages}'
+    command: python tieba_checkin.py
+    default_cron: 0 10 9 * * *
+    enabled: true
+    remark: 至少一个吧成功或已签到且无其他错误时成功；全部跳过仍返回失败。
+scenarios:
+- id: standard
+  name: 每日签到
+  description: 每天运行已启用的任务；遇登录验证时需本人处理。
+  default: true
+  task_presets:
+    daily:
+      enabled: true

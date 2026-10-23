@@ -1,0 +1,68 @@
+spec_version: v1
+id: smzdm-checkin
+name: 什么值得买签到与任务奖励
+version: 1.0.1
+author: OneBigMoon
+category: 福利签到
+template:
+- tag: SmzdmCheckin
+- mise_languages: python@3.13.12
+description: 签到与任务奖励分别调度；签到遇验证码需手动处理，默认关闭。奖励任务支持浏览和领奖，评论、关注、发布内容由本人完成。
+homepage: https://github.com/OneBigMoon/baihu-checkins
+schedule_opts:
+  timeout: 5
+  retry_count: 0
+  retry_interval: 0
+sources:
+- id: main
+  source_type: git
+  source_url: https://github.com/OneBigMoon/baihu-checkins.git
+  branch: v1.0.1
+  path: ''
+  single_file: false
+  proxy: none
+  target_path: main
+setup:
+  check: mise exec {mise_languages} -- python --version
+  install: mise install {mise_languages}
+env_schema:
+- key: SMZDM_COOKIE
+  label: 什么值得买 Cookie
+  type: secret
+  required: true
+  description: 登录 smzdm.com 后复制本人请求 Cookie。签到验证码请在官网完成，不会自动处理。
+  placeholder: ''
+sync_rules:
+  defaults:
+    timeout: 5
+    retry_count: 0
+    retry_interval: 0
+    work_dir: '{app_dir}/main'
+    language: '{mise_languages}'
+  tasks:
+  - id: daily
+    name: 什么值得买每日签到
+    source: main
+    language: '{mise_languages}'
+    command: python smzdm_checkin.py
+    default_cron: 0 10 9 * * *
+    enabled: false
+    remark: 默认关闭：曾出现 110202 验证码错误；官网手动验证并确认可用后再启用。
+  - id: rewards
+    name: 什么值得买任务奖励
+    source: main
+    language: '{mise_languages}'
+    command: python smzdm_rewards.py
+    default_cron: 0 20 9 * * *
+    enabled: true
+    remark: 只处理支持的浏览与领奖；评论、关注和发帖提示人工完成。
+scenarios:
+- id: standard
+  name: 每日签到
+  description: 每天运行已启用的任务；遇登录验证时需本人处理。
+  default: true
+  task_presets:
+    daily:
+      enabled: false
+    rewards:
+      enabled: true
