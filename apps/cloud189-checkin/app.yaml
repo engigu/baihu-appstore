@@ -1,0 +1,67 @@
+spec_version: v1
+id: cloud189-checkin
+name: 天翼云盘每日签到
+version: 1.0.1
+author: OneBigMoon
+category: 福利签到
+template:
+- tag: Cloud189Checkin
+- mise_languages: python@3.13.12
+description: 使用本人天翼账号密码登录并领取每日签到容量；遇到登录验证时需人工处理。
+homepage: https://github.com/OneBigMoon/baihu-checkins
+schedule_opts:
+  timeout: 5
+  retry_count: 0
+  retry_interval: 0
+sources:
+- id: main
+  source_type: git
+  source_url: https://github.com/OneBigMoon/baihu-checkins.git
+  branch: v1.0.1
+  path: ''
+  single_file: false
+  proxy: none
+  target_path: main
+setup:
+  check: mise exec {mise_languages} -- python -c "import rsa; assert rsa.__version__
+    == '4.9.1'"
+  install: 'mise install {mise_languages}
+
+    mise exec {mise_languages} -- python -m pip install --no-cache-dir -r "{app_dir}/main/requirements.txt"'
+env_schema:
+- key: CLOUD189_USERNAME
+  label: 天翼账号
+  type: string
+  required: true
+  description: 本人天翼云盘账号。
+  placeholder: ''
+- key: CLOUD189_PASSWORD
+  label: 天翼密码
+  type: secret
+  required: true
+  description: 仅保存在当前面板的机密变量中，不写入源码或日志。
+  placeholder: ''
+sync_rules:
+  defaults:
+    timeout: 5
+    retry_count: 0
+    retry_interval: 0
+    work_dir: '{app_dir}/main'
+    language: '{mise_languages}'
+  tasks:
+  - id: daily
+    name: 天翼云盘每日签到
+    source: main
+    language: '{mise_languages}'
+    command: python cloud189_checkin.py
+    default_cron: 0 10 9 * * *
+    enabled: true
+    remark: 登录验证或密码错误时任务失败，不自动处理验证码。
+scenarios:
+- id: standard
+  name: 每日签到
+  description: 每天运行已启用的任务；遇登录验证时需本人处理。
+  default: true
+  task_presets:
+    daily:
+      enabled: true
